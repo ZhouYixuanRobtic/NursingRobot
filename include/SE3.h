@@ -70,6 +70,7 @@ namespace LieGroup{
         so_3 calUnitso3() const {return so_3{VecToso3(Axis())};};
     public:
         SO3( SO3 const &SO3_);
+        //TODO: may here should add a std::vector input or double* input for SO3
         explicit SO3(const R3 & twist);
         explicit SO3(const Eigen::Matrix<double,4,1> & quaternion_);
         explicit SO3(const SO_3 & rotation_matrix);
@@ -98,10 +99,11 @@ namespace LieGroup{
         R6 twist_3d_{};
 
         SE_3 calSE3() const;
-        se_3 calse3(){return se_3{VecTose3(Vector())};};
+        se_3 calse3() const{return se_3{VecTose3(Vector())};};
         se_3 calUnitse3(){return se_3{VecTose3(Axis())};};
     public:
         SE3(const SE3 & SE3_);
+        //TODO: may here should add a std::vector input or double* input for SE3
         explicit SE3(const R6 & twist);
         explicit SE3(const Eigen::Matrix<double,7,1> & pose_with_quaternion);
         explicit SE3(const Eigen::Affine3d & transformation_matrix);
