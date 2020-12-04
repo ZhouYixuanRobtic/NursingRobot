@@ -1,12 +1,13 @@
 #include <iostream>
 #include "SE3.h"
-
+#include "RobotModel.h"
+#include "RobotModel.cpp"
 int main() {
     LieGroup::R6 a;
     a<<1,2,3,4,5,6;
     LieGroup::SE3 pose(a);
-    LieGroup::SE3 check_pose(pose.SE3Matrix());
-
+    LieGroup::SE3 check_pose(pose.inverse());
+/*
     std::cout<<"SO3 Axis check: "<<pose.Axis()<<std::endl;
     std::cout<<"SO3 Vector check: "<<pose.Vector()<<std::endl;
     std::cout<<"SO3 Theta check: "<<pose.Theta()<<std::endl;
@@ -20,5 +21,7 @@ int main() {
     std::cout<<"SO3 so3 check: "<<check_pose.se3Matrix()<<std::endl;
     std::cout<<"SO3 unit so3 check: "<<check_pose.unitse3Matrix()<<std::endl;
     std::cout<<"SO3 SO3 check:" <<check_pose.SE3Matrix()<<std::endl;
+    */
+    std::cout<<pose.SE3Matrix()*check_pose.SE3Matrix()<<std::endl;
 
 }

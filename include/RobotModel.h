@@ -9,27 +9,28 @@
 //TODO: confirm the data type
 class RobotModel {
 private:
-    const std::vector<LieGroup::SE3> all_screw_axes_;
-    std::vector<double> current_joint_angles_;
-    bool isInBodyFrame_;
-    LieGroup::SE_3 home_configuration_;
+    std::vector<LieGroup::SE3> all_screw_axes_;
+    Eigen::VectorXd current_joint_angles_{};
+    const bool IN_BODY_;
+    LieGroup::SE_3 home_configuration_{};
     virtual void eulerStep()=0;
 
 public:
-    RobotModel();
-    explicit RobotModel(const std::vector<LieGroup::SE3> & all_screw_axes,bool isInBodyFrame);
+    explicit RobotModel(const std::string & urdf_name,bool isInBodyFrame = false);
+    explicit RobotModel(const std::vector<LieGroup::SE3> & all_screw_axes,const LieGroup::SE_3 &home_configuration,bool isInBodyFrame=false);
     ~RobotModel() = default;
-    void loadModel(const std::string & urdf_name);
-    void setCurrentJointAngles(std::vector<double> joint_angles);
-    inline Eigen::Affine3d fkInSpace(std::vector<double> joint_angles);
-    inline Eigen::Affine3d fkInBody(std::vector<double> joint_angles);
-    bool nIkInSpace(const Eigen::Affine3d & desired_pose,const std::vector<double> & initial_guess,std::vector<double>& joint_angles, double emog, double ev);
-    bool nIkInBody(const Eigen::Affine3d & desired_pose,const std::vector<double> & initial_guess,std::vector<double>& joint_angles, double emog, double ev);
-    std::vector<double> bestIkSolution(const Eigen::Affine3d & desired_pose);
-    Eigen::MatrixXd  allIkSolutions(const Eigen::Affine3d & desired_pose);
+    //TODO: implement a URDF reader
+    virtual void loadModel(const std::string & urdf_name) =0;
+    void setCurrentJointAngles(const Eigen::VectorXd & joint_angles){current_joint_angles_ = joint_angles;};
+    inline Eigen::Affine3d fkInSpace(const Eigen::VectorXd & joint_angles);
+    inline Eigen::Affine3d fkInBody(const Eigen::VectorXd  &joint_angles);
+    inline bool nIkInSpace(const Eigen::Affine3d & desired_pose,Eigen::VectorXd& joint_angles, double eomg=0.01, double ev=0.001);
+    inline bool nIkInBody(const Eigen::Affine3d & desired_pose,Eigen::VectorXd& joint_angles, double eomg=0.01, double ev=0.001);
+    inline Eigen::VectorXd nearestIkSolution(const Eigen::Affine3d & desired_pose);
+    inline Eigen::MatrixXd allIkSolutions(const Eigen::Affine3d & desired_pose);
 
-    virtual Eigen::MatrixXd jacobianSpace() = 0;
-    virtual Eigen::MatrixXd jacobianBody() = 0;
+    inline Eigen::MatrixXd jacobianSpace(const Eigen::VectorXd & joint_angles);
+    inline Eigen::MatrixXd jacobianBody(const Eigen::VectorXd &joint_angles);
 
     virtual Eigen::VectorXd inverseDynamics() = 0;
     virtual Eigen::Vector3d gravityForces() = 0 ;

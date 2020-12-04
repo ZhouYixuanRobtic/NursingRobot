@@ -61,6 +61,13 @@ namespace LieGroup{
         twist<<omega,se3_.block<3,1>(0,3);
         return twist;
     }
+    static adjoint_mat getAdjoint(const SE_3 & SE3_)
+    {
+        adjoint_mat ad_ret{};
+        ad_ret<< SE3_.block<3,3>(0,0),Eigen::Matrix3d::Zero(),
+                VecToso3(SE3_.block<3,1>(0,3))*SE3_.block<3,3>(0,0),SE3_.block<3,3>(0,0);
+        return ad_ret;
+    }
     class SO3{
     private:
         R3 twist_2d_{};
@@ -74,6 +81,7 @@ namespace LieGroup{
         explicit SO3(const R3 & twist);
         explicit SO3(const Eigen::Matrix<double,4,1> & quaternion_);
         explicit SO3(const SO_3 & rotation_matrix);
+        explicit SO3(double roll, double pitch, double yaw);
         ~SO3() = default;
 
         SO3 operator+(const SO3& input)const;
@@ -90,7 +98,7 @@ namespace LieGroup{
         static SO_3 MatrixExp(const so_3 & so3_) ;
         static so_3 MatrixLog(const SO_3 & SO3_) ;
 
-        SO3 inverse();
+        SO3 inverse() const{R3 twist = -Axis() * Theta();return SO3(twist);};
         SO3 interp(double lambda, const SO3 & destination) const ;
     };
 
@@ -116,11 +124,11 @@ namespace LieGroup{
         SE3 operator*(double s) const;
         SE3 operator()(double theta){twist_3d_ = Axis()*theta;return *this;}
         R6 Vector() const{return twist_3d_;};
-        R6 Axis(){return getNormalizedTwist(twist_3d_);};
+        R6 Axis()const {return getNormalizedTwist(twist_3d_);};
         double Theta() const
         {
             /*
-             * Only takes pure rotation and translation into account, this is not general.
+             * Only takes pure rotation or translation into account, this is not general.
              * But for robotics, it's sufficient.
              */
             if(!NearZero(twist_3d_.norm()) && NearZero(twist_3d_.block<3,1>(0,0).norm()))
@@ -136,7 +144,7 @@ namespace LieGroup{
 
         adjoint_mat Adjoint();
         static R6 getNormalizedTwist(const R6 & twist);
-        SE3 inverse();
+        SE3 inverse()const{R6 twist = -Axis() * Theta();return SE3(twist);};
         SE3 interp(double lambda, const SE3 & destination) const;
 
     };

@@ -68,6 +68,14 @@ SO3::SO3(const SO_3 &rotation_matrix)
     R3 twist = rotation_vector.axis()*rotation_vector.angle();
     *this = SO3(twist);
 }
+SO3::SO3(double roll, double pitch, double yaw)
+{
+    Eigen::AngleAxisd yawAngle(Eigen::AngleAxisd(yaw,Eigen::Vector3d::UnitX()));
+    Eigen::AngleAxisd pitchAngle(Eigen::AngleAxisd(pitch,Eigen::Vector3d::UnitY()));
+    Eigen::AngleAxisd rollAngle(Eigen::AngleAxisd(roll,Eigen::Vector3d::UnitZ()));
+    Eigen::Matrix3d rotation_matrix{rollAngle*pitchAngle*yawAngle};
+    *this = SO3(rotation_matrix);
+}
 SO3::SO3(const Eigen::Matrix<double, 4, 1> &quaternion_)
 {
     Eigen::Quaterniond quaternion(quaternion_);
@@ -92,12 +100,6 @@ SO3 SO3::interp(double lambda, const SO3 & destination) const
 {
     return *this+((destination-*this)*lambda);
 }
-SO3 SO3::inverse()
-{
-    SO_3 tmp_matrix{calSO3().inverse()};
-    return SO3(tmp_matrix);
-}
-
 
 
 SE_3 SE3::calSE3() const
@@ -222,11 +224,6 @@ R6 SE3::getNormalizedTwist(const R6 &twist)
         return twist.normalized();
     else
         return twist/theta;
-}
-SE3 SE3::inverse()
-{
-    SE_3 tmp_matrix{calSE3().inverse()};
-    return SE3(tmp_matrix);
 }
 SE3 SE3::interp(double lambda, const SE3 &destination) const
 {
