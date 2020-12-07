@@ -48,25 +48,23 @@ so_3 SO3::MatrixLog(const SO_3 &SO3_)
     }
     return m_ret;
 }
-SO_3 SO3::calSO3() const
-{
-    so_3 so_3_ = NearZero(Theta()) ? Eigen::Matrix3d::Identity() : VecToso3(Vector());
-    return SO_3{MatrixExp(so_3_)};
-}
 SO3::SO3( SO3 const &SO3_)
 {
     twist_2d_ = SO3_.twist_2d_;
+    SO3_MATRIX_ = SO3_.SO3_MATRIX_;
 }
 SO3::SO3(const R3 &twist)
 {
     twist_2d_ = twist;
+    so_3 so_3_ = NearZero(Theta()) ? Eigen::Matrix3d::Identity() : VecToso3(Vector());
+    SO3_MATRIX_ = MatrixExp(so_3_);
 }
 SO3::SO3(const SO_3 &rotation_matrix)
 {
     //R3 twist = so3ToVec(MatrixLog(rotation_matrix));
     Eigen::AngleAxisd rotation_vector(rotation_matrix);
-    R3 twist = rotation_vector.axis()*rotation_vector.angle();
-    *this = SO3(twist);
+    twist_2d_ = rotation_vector.axis()*rotation_vector.angle();
+    SO3_MATRIX_ = rotation_matrix;
 }
 SO3::SO3(double roll, double pitch, double yaw)
 {
@@ -83,17 +81,17 @@ SO3::SO3(const Eigen::Matrix<double, 4, 1> &quaternion_)
 }
 SO3 SO3::operator+(const SO3 & input) const
 {
-    SO_3 tmp_matrix{this->calSO3()*input.calSO3()};
+    SO_3 tmp_matrix{this->SO3_MATRIX_ *input.SO3_MATRIX_};
     return SO3(tmp_matrix);
 }
 SO3 SO3::operator-(const SO3 &input) const
 {
-    SO_3 tmp_matrix(input.calSO3().inverse()* this->calSO3());
+    SO_3 tmp_matrix(input.SO3_MATRIX_.inverse()* this->SO3_MATRIX_);
     return SO3(tmp_matrix);
 }
 SO3 SO3::operator*(double s) const
 {
-    SO_3 tmp_matrix(this->calSO3().pow(s));
+    SO_3 tmp_matrix(this->SO3_MATRIX_.pow(s));
     return SO3(tmp_matrix);
 }
 SO3 SO3::interp(double lambda, const SO3 & destination) const
@@ -101,18 +99,6 @@ SO3 SO3::interp(double lambda, const SO3 & destination) const
     return *this+((destination-*this)*lambda);
 }
 
-
-SE_3 SE3::calSE3() const
-{
-    se_3  se_3_{};
-    if(!NearZero(Theta()))
-        se_3_ =  VecTose3(Vector());
-    else
-        se_3_<<Eigen::Matrix3d::Identity(),twist_3d_.block<3,1>(3,0),
-                0,0,0,0;
-
-    return SE_3{MatrixExp(se_3_)};
-}
 
 SE_3 SE3::MatrixExp(const se_3 &se3_)
 {
@@ -167,10 +153,18 @@ se_3 SE3::MatrixLog(const SE_3 &SE3_)
 SE3::SE3(const SE3 &SE3_)
 {
     twist_3d_ = SE3_.twist_3d_;
+    SE3_MATRIX_ = SE3_.SE3_MATRIX_;
 }
 SE3::SE3(const R6 &twist)
 {
     twist_3d_ = twist;
+    se_3  se_3_{};
+    if(!NearZero(Theta()))
+        se_3_ =  VecTose3(Vector());
+    else
+        se_3_<<Eigen::Matrix3d::Identity(),twist_3d_.block<3,1>(3,0),
+                0,0,0,0;
+    SE3_MATRIX_ = MatrixExp(se_3_);
 }
 SE3::SE3(const SE_3 &transformation_matrix)
 {
@@ -184,7 +178,7 @@ SE3::SE3(const Eigen::Affine3d &transformation_matrix)
 SE3::SE3(const Eigen::Matrix<double, 7, 1> &pose_with_quaternion)
 {
     Eigen::Vector3d translation{pose_with_quaternion.block<3,1>(0,0)};
-    Eigen::Quaterniond rotation{pose_with_quaternion.block<4,1>(0,3)};
+    Eigen::Quaterniond rotation{pose_with_quaternion.block<4,1>(3,0)};
     Eigen::Affine3d transformation_matrix{};
     transformation_matrix.translation() = translation;
     transformation_matrix.linear() = rotation.toRotationMatrix();
@@ -193,26 +187,26 @@ SE3::SE3(const Eigen::Matrix<double, 7, 1> &pose_with_quaternion)
 
 SE3 SE3::operator+(const SE3 & input)const
 {
-    SE_3 tmp_matrix{this->calSE3()*input.calSE3()};
+    SE_3 tmp_matrix{this->SE3_MATRIX_*input.SE3_MATRIX_};
     return SE3(tmp_matrix);
 }
 
 SE3 SE3::operator-(const SE3 &input)const
 {
-    SE_3 tmp_matrix(input.calSE3().inverse()* this->calSE3());
+    SE_3 tmp_matrix(input.SE3_MATRIX_.inverse()* this->SE3_MATRIX_);
     return SE3(tmp_matrix);
 }
 
 SE3 SE3::operator*(double s)const
 {
-    SE_3 tmp_matrix(this->calSE3().pow(s));
+    SE_3 tmp_matrix(this->SE3_MATRIX_.pow(s));
     return SE3(tmp_matrix);
 }
 
 adjoint_mat SE3::Adjoint()
 {
     adjoint_mat ad_ret{};
-    SE_3 T{calSE3()};
+    const SE_3 & T = SE3_MATRIX_;
     ad_ret<< T.block<3,3>(0,0),Eigen::Matrix3d::Zero(),
             VecToso3(T.block<3,1>(0,3))*T.block<3,3>(0,0),T.block<3,3>(0,0);
     return ad_ret;
@@ -227,5 +221,23 @@ R6 SE3::getNormalizedTwist(const R6 &twist)
 }
 SE3 SE3::interp(double lambda, const SE3 &destination) const
 {
-    return *this+((destination-*this)*lambda);
+    if(lambda >= 1)
+        return destination;
+    else if(lambda > 0)
+        return *this+((destination-*this)*lambda);
+    else
+        return *this;
+}
+Eigen::MatrixXd SE3::bezierInterp(const SE3 &intermediate, const SE3 &destination)
+{
+    Eigen::Matrix<double,6,11> control_points{};
+    control_points.col(0) == (*this).Vector();
+    control_points.col(5) = intermediate.Vector();
+    control_points.col(10) = destination.Vector();
+    const SE3 & P0 = *this;
+    const SE3 & P5 = intermediate;
+    const SE3 & P11 = destination;
+
+
+    return control_points;
 }

@@ -9,13 +9,28 @@ if(NOT EIGEN3_INCLUDE_DIRS)
     set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(YAML REQUIRED yaml-cpp)
+pkg_check_modules(NEW_YAMLCPP yaml-cpp>=0.5)
+if(NEW_YAMLCPP_FOUND)
+    add_definitions(-DHAVE_NEW_YAMLCPP)
+endif(NEW_YAMLCPP_FOUND)
+
 include_directories (
         SYSTEM
         include
         ${EIGEN3_INCLUDE_DIRS}
+        ${YAML_INCLUDE_DIRS}
+)
+link_directories(
+        /user/local/lib
+        ${YAML_LIBRARIES}
 )
 
 add_library(SE3 src/SE3.cpp include/SE3.h)
 
+add_library(RobotModel src/RobotModel.cpp)
+target_link_libraries(RobotModel SE3 ${YAML_LIBRARIES})
+
 add_executable(NursingRobot src/main.cpp)
-target_link_libraries(NursingRobot SE3)
+target_link_libraries(NursingRobot SE3 RobotModel ${YAML_LIBRARIES})

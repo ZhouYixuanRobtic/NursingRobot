@@ -71,11 +71,12 @@ namespace LieGroup{
     class SO3{
     private:
         R3 twist_2d_{};
+        LieGroup::SO_3 SO3_MATRIX_{};
 
-        SO_3 calSO3() const;
         so_3 calso3() const {return so_3{VecToso3(Vector())};};
         so_3 calUnitso3() const {return so_3{VecToso3(Axis())};};
     public:
+        SO3(){twist_2d_ = R3 ::Zero();SO3_MATRIX_=SO_3 ::Identity();};
         SO3( SO3 const &SO3_);
         //TODO: may here should add a std::vector input or double* input for SO3
         explicit SO3(const R3 & twist);
@@ -87,12 +88,12 @@ namespace LieGroup{
         SO3 operator+(const SO3& input)const;
         SO3 operator-(const SO3& input) const;
         SO3 operator*(double s) const;
-        SO3 operator()(double theta){twist_2d_ = Axis()*theta;return *this;};
+        SO3 operator()(double theta){R3 temp_twist= Axis()*theta; return SO3(temp_twist);};
 
         R3 Vector() const {return twist_2d_;};
         R3 Axis() const {return twist_2d_.normalized();};
         double Theta() const{return twist_2d_.norm();};
-        SO_3 SO3Matrix() const{return calSO3();};
+        const SO_3 & SO3Matrix() const{return SO3_MATRIX_;};
         so_3 unitso3Matrix() const {return calUnitso3();};
         so_3 so3Matrix() const {return calso3();};
         static SO_3 MatrixExp(const so_3 & so3_) ;
@@ -105,24 +106,25 @@ namespace LieGroup{
     class SE3 {
     private:
         R6 twist_3d_{};
+        LieGroup::SE_3 SE3_MATRIX_;
 
-        SE_3 calSE3() const;
         se_3 calse3() const{return se_3{VecTose3(Vector())};};
         se_3 calUnitse3(){return se_3{VecTose3(Axis())};};
     public:
+        SE3(){twist_3d_=R6::Zero();SE3_MATRIX_ = SE_3 ::Identity();};
         SE3(const SE3 & SE3_);
-        //TODO: may here should add a std::vector input or double* input for SE3
         explicit SE3(const R6 & twist);
         explicit SE3(const Eigen::Matrix<double,7,1> & pose_with_quaternion);
         explicit SE3(const Eigen::Affine3d & transformation_matrix);
         explicit SE3(const SE_3 & transformation_matrix);
+
 
         ~SE3() = default;
 
         SE3 operator+(const SE3& input) const;
         SE3 operator-(const SE3& input) const;
         SE3 operator*(double s) const;
-        SE3 operator()(double theta){twist_3d_ = Axis()*theta;return *this;}
+        SE3 operator()(double theta){R6 temp_twist = Axis()*theta; return SE3(temp_twist);}
         R6 Vector() const{return twist_3d_;};
         R6 Axis()const {return getNormalizedTwist(twist_3d_);};
         double Theta() const
@@ -136,16 +138,18 @@ namespace LieGroup{
             else
                 return twist_3d_.block<3,1>(0,0).norm();
         };
-        SE_3 SE3Matrix(){return calSE3();};
+        const SE_3 & SE3Matrix(){return SE3_MATRIX_;};
         se_3 se3Matrix(){return calse3();};
         se_3 unitse3Matrix(){return calUnitse3();};
         static SE_3 MatrixExp(const se_3 & se3_);
         static se_3 MatrixLog(const SE_3 & SE3_);
+        SO3 SO3Part() const{R3 omega{twist_3d_.block<3,1>(0,0)};return SO3(omega);};
 
         adjoint_mat Adjoint();
         static R6 getNormalizedTwist(const R6 & twist);
         SE3 inverse()const{R6 twist = -Axis() * Theta();return SE3(twist);};
         SE3 interp(double lambda, const SE3 & destination) const;
+        Eigen::MatrixXd bezierInterp(const SE3 & intermediate,const SE3 & destination);
 
     };
 
