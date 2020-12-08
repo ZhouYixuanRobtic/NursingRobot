@@ -7,7 +7,6 @@
 
 #include "SE3.h"
 #include <yaml-cpp/yaml.h>
-//TODO: confirm the data type
 class RobotModel {
 protected:
     std::vector<LieGroup::SE3> all_screw_axes_{};

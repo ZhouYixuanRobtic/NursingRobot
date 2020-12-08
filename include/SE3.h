@@ -78,7 +78,6 @@ namespace LieGroup{
     public:
         SO3(){twist_2d_ = R3 ::Zero();SO3_MATRIX_=SO_3 ::Identity();};
         SO3( SO3 const &SO3_);
-        //TODO: may here should add a std::vector input or double* input for SO3
         explicit SO3(const R3 & twist);
         explicit SO3(const Eigen::Matrix<double,4,1> & quaternion_);
         explicit SO3(const SO_3 & rotation_matrix);

@@ -41,7 +41,7 @@ so_3 SO3::MatrixLog(const SO_3 &SO3_)
     {
         Eigen::AngleAxisd rotation_vector(SO3_);
         double theta = rotation_vector.angle();
-        //TODO:
+        //Warning:
         // here exist a multiple value problem,temporarily fixed by using angle axis;
         //double theta = std::acos(acosinput);
         m_ret = theta*(SO3_-SO3_.transpose())/(2.0*sin(theta));
