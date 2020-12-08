@@ -25,7 +25,7 @@ public:
     ~RobotModel() = default;
     void loadModel(const std::string & yaml_name);
     void setCurrentJointAngles(const Eigen::VectorXd & joint_angles){current_joint_angles_ = joint_angles;};
-
+    void addEndEffector(const LieGroup::SE3 & ee_configuration);
 
     inline Eigen::VectorXd nearestIkSolution(const Eigen::Affine3d & desired_pose);
     inline Eigen::MatrixXd allIkSolutions(const Eigen::Affine3d & desired_pose);

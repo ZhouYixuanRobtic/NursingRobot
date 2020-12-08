@@ -26,7 +26,6 @@ void RobotModel::loadModel(const std::string &yaml_name)
         IN_BODY_ = doc["aubo_i5"]["isInBodyFrame"].as<bool>();
         std::map<std::string,std::vector<double>> axes_map;
         axes_map = doc["aubo_i5"]["screw_axes"].as<std::map<std::string,std::vector<double>>>();
-
         for(const auto & it : axes_map)
         {
             if(it.second.size()!=6)
@@ -66,6 +65,30 @@ inline Eigen::Affine3d RobotModel::fkInBody(const Eigen::VectorXd &joint_angles)
         ee_pose = ee_pose* all_screw_axes_[i](joint_angles[i]).SE3Matrix();
     }
     return Eigen::Affine3d{ee_pose};
+}
+void RobotModel::addEndEffector(const LieGroup::SE3 &ee_configuration)
+{
+    if(!IN_BODY_)
+        home_configuration_ = home_configuration_ + ee_configuration;
+    else
+    {
+        //change all screw axes into space reference
+        LieGroup::adjoint_mat ad = LieGroup::getAdjoint(home_configuration_.SE3Matrix());
+        std::vector<LieGroup::R6> screw_axes_in_space{};
+        for(const auto & body_screw : all_screw_axes_)
+        {
+            screw_axes_in_space.emplace_back(ad*body_screw.Axis());
+        }
+        //change home configuration;
+        home_configuration_ = home_configuration_ + ee_configuration;
+        //change back to body reference
+        ad = LieGroup::getAdjoint(home_configuration_.inverse().SE3Matrix());
+        for(int i =0 ; i<screw_axes_in_space.size(); ++i)
+        {
+            LieGroup::R6 temp_axis{ad*screw_axes_in_space[i]};
+            all_screw_axes_[i]= LieGroup::SE3(temp_axis);
+        }
+    }
 }
 inline Eigen::MatrixXd RobotModel::jacobianSpace(const Eigen::VectorXd & joint_angles)
 {
