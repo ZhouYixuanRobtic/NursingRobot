@@ -155,197 +155,102 @@ inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desi
     else
         return current_joint_angles_;
 }
-inline double RobotModel::customAtan2(double y, double x)
-{
-    double eps = 1e-8;
-    double angle = 0;
-    if((fabs(y) < eps)&&(fabs(x) < eps))
-    {
-        return 0;
-    }
-    if(fabs(x) < eps)
-        angle = M_PI/2.0*SIGN(y);
-    else if(fabs(y) < eps)
-    {
-        if (SIGN(x) == 1)
-            angle = 0;
-        else
-            angle = M_PI;
-    }
-    else
-    {
-        angle = atan2(y, x);
-    }
 
-    return angle;
-}
-inline int RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion)
+inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion)
 {
-    static double h1=0.1215,d1=0.408,d2=0.376,d=0.8865;
-    Eigen::Vector4d p1{0,h1,d,1};
-    LieGroup::SE_3 M1{desired_motion*home_configuration_.SE3Matrix().inverse()};
-    p1=M1*p1;
+    LieGroup::SE_3 a{mount_configuration_.SE3Matrix().inverse()*desired_motion*ee_configuration_.SE3Matrix().inverse()};
+    double h1=0.1215,d1=0.4080,d2=0.3760,d= 0.8865,d1p2 =0.7840,h2=0.21550;
+    int num_solutions{};
+
+    //step 1 calculate p1
+    LieGroup::SE_3 M1{a * home_configuration_.SE3Matrix().inverse()};
+    double p1[2]{a(0, 3) + a(0, 2) * (h1 - h2),
+                       a(1, 3) + a(1, 2) * (h1 - h2)};
 
     //step 2 solving theta1
     //in case of very small negative value;
     double r1 = p1[0]*p1[0]+p1[1]*p1[1]-h1*h1;
-    //r1 = nearZero(r1);
-    //r1 = sqrt(r1);
-    double theta1[2] = {customAtan2(p1[1]*r1-h1*p1[0],p1[1]*h1+p1[0]*r1),
-                      customAtan2(-p1[1]*r1-h1*p1[0],p1[1]*h1-p1[0]*r1)};
-    for(int i=0;i<2;++i)
-    {
-        if(theta1[i] > M_PI)
-            theta1[]
-    }
-
+    r1 = nearZero(r1);
+    if(r1<0.0) return false;
+    double solutions[8][6];
+    r1 = sqrt(r1);
+    double theta1[2] = {atan2(p1[1]*r1-h1*p1[0],p1[1]*h1+p1[0]*r1),
+                        atan2(-p1[1]*r1-h1*p1[0],p1[1]*h1-p1[0]*r1)};
 
     //step 3 solving theta5 theta6
-    double r3 = desired_motion(1,2)*cos(theta1[0]) - desired_motion(0,2)*sin(theta1[0]);
     double theta5[4];
-    theta5[0] =acos(r3);theta5[1]=-acos(r3);
-
-    r3 = desired_motion(1,2)*cos(theta1[1]) - desired_motion(0,2)*sin(theta1[1]);
-    r3 = nearZero(r3-1)+1;
-    theta5[2] =acos(r3);theta5[3]=-acos(r3);
-    double theta6[4]{}, sum_theta[4]{};
-    if(std::abs(1-r3) <1E-8)
+    for(int i=0; i<2; ++i)
     {
-        std::cout<<"singularity"<<std::endl;
+        double r3 = a(1, 2) * cos(theta1[i]) - a(0, 2) * sin(theta1[i]);
+        r3 = nearZero(r3-1)+1;
+        theta5[i*2+0] =acos(r3);theta5[i*2+1]=-acos(r3);
     }
-    else
+
+    double theta6, sum_theta;
+    double theta2[2]{},theta3[8]{},theta4[8]{};
+    for(int i=0; i<2; ++i)
     {
-        double r4 = desired_motion(1,1)*cos(theta1[0]) - desired_motion(0,1)*sin(theta1[0]);
-        double r2 = desired_motion(0,0)*sin(theta1[0]) - desired_motion(1,0)*cos(theta1[0]);
-        double r5 = desired_motion(0,2)*cos(theta1[0]) + desired_motion(1,2)*sin(theta1[0]);
-        theta6[0] = atan2(r4/sin(theta5[0]),r2/sin(theta5[0]));
-        theta6[1] = atan2(r4/sin(theta5[1]),r2/sin(theta5[1]));
-        sum_theta[0] = atan2(desired_motion(2,2)/sin(theta5[0]),-r5/sin(theta5[0]));
-        sum_theta[1] = atan2(desired_motion(2,2)/sin(theta5[1]),-r5/sin(theta5[1]));
+        for(int j=0; j<2; ++j)
+        {
+            int index = i*2+j;
+            if(fabs(sin(theta5[index])) < 1e-8) break;
 
-        r4 = desired_motion(1,1)*cos(theta1[1]) - desired_motion(0,1)*sin(theta1[1]);
-        r2 = desired_motion(0,0)*sin(theta1[1]) - desired_motion(1,0)*cos(theta1[1]);
-        r5 = desired_motion(0,2)*cos(theta1[1]) + desired_motion(1,2)*sin(theta1[1]);
-        theta6[2] = atan2(r4/sin(theta5[0]),r2/sin(theta5[0]));
-        theta6[3] = atan2(r4/sin(theta5[1]),r2/sin(theta5[1]));
-        sum_theta[2] = atan2(desired_motion(2,2)/sin(theta5[0]),-r5/sin(theta5[0]));
-        sum_theta[3] = atan2(desired_motion(2,2)/sin(theta5[1]),-r5/sin(theta5[1]));
+            double r4 = a(1, 1) * cos(theta1[i]) - a(0, 1) * sin(theta1[i]);
+            double r2 = a(0, 0) * sin(theta1[i]) - a(1, 0) * cos(theta1[i]);
+            double r5 = a(0, 2) * cos(theta1[i]) + a(1, 2) * sin(theta1[i]);
+            theta6 = atan2(r4/sin(theta5[index]),r2/sin(theta5[index]));
+            sum_theta= atan2(a(2, 2) / sin(theta5[index]), -r5 / sin(theta5[index]));
+
+            LieGroup::SE_3 e_i1,e_i5,e_i6;
+            e_i1<<cos(theta1[i]),sin(theta1[i]),0,0,
+                    -sin(theta1[i]),cos(theta1[i]),0,0,
+                    0,0,1,0,
+                    0,0,0,1;
+            e_i6<<cos(theta6),0,-sin(theta6),sin(theta6)*d,
+                    0,1,0,0,
+                    sin(theta6),0,cos(theta6),(1-cos(theta6))*d,
+                    0,0,0,1;
+            e_i5<<cos(theta5[index]),sin(theta5[index]),0,-h1*sin(theta5[index]),
+                    -sin(theta5[index]),cos(theta5[index]),0,h1*(1-cos(theta5[index])),
+                    0,0,1,0,
+                    0,0,0,1;
+            LieGroup::SE_3 M3{e_i1*M1*e_i6*e_i5};
+            double r6 = M3(0,3)+d1p2*sin(sum_theta);
+            double r7 = M3(2,3)+d1p2*cos(sum_theta);
+            double s1 = (r6*r6+ r7*r7-d1*d1-d2*d2)/(2*d1*d2);
+            s1 =nearZero(s1-1)+1;
+            if(fabs(s1)>1) continue;
+            double alpha =atan2(r6,r7);
+            double s2 = (r6*r6+r7*r7+d1*d1-d2*d2)/(2*d1*sqrt(r6*r6+r7*r7));
+            s2 =nearZero(s2-1)+1;
+            theta3[0] = acos(s1);
+            theta3[1] = -acos(s1);
+            theta2[0] = acos(s2)+ alpha;
+            theta2[1] = -acos(s2)+ alpha;
+            theta4[0] = sum_theta-theta2[0]+theta3[0];
+            theta4[1] = sum_theta-theta2[1]+theta3[1];
+
+            for(int k =0; k<2;++k)
+            {
+                solutions[num_solutions][0] = theta1[i];
+                solutions[num_solutions][1] = theta2[k];
+                solutions[num_solutions][2] = theta3[k];
+                solutions[num_solutions][3] = theta4[k];
+                solutions[num_solutions][4] = theta5[index];
+                solutions[num_solutions][5] = theta6;
+                num_solutions ++;
+            }
+        }
     }
-    double theta2[8]{},theta3[8]{},theta4[8]{};
 
-    LieGroup::SE_3 e_i1,e_i5,e_i6;
-    e_i1<<cos(theta1[0]),sin(theta1[0]),0,0,
-            -sin(theta1[0]),cos(theta1[0]),0,0,
-            0,0,1,0,
-            0,0,0,1;
-    e_i6<<cos(theta6[0]),0,-sin(theta6[0]),sin(theta6[0])*0.8865,
-            0,1,0,0,
-            sin(theta6[0]),0,cos(theta6[0]),(1-cos(theta6[0]))*0.8865,
-            0,0,0,1;
-    e_i5<<cos(theta5[0]),sin(theta5[0]),0,-0.1215*sin(theta5[0]),
-            -sin(theta5[0]),cos(theta5[0]),0,0.1215*(1-cos(theta6[0])),
-            0,0,1,0,
-            0,0,0,1;
+    if(num_solutions != 0)
+    {
+        joint_solutions.resize(6,num_solutions);
+        for(int i=0;i<num_solutions;++i)
+        {
+            memcpy(joint_solutions.col(i).data(),solutions[i],6*sizeof(double));
+        }
+    }
 
-    LieGroup::SE_3 M3{e_i1*M1*e_i6*e_i5};
-    double r6 = M3(0,3)+0.784*sin(sum_theta[0]);
-    double r7 = M3(2,3)+0.784*cos(sum_theta[0]);
-    double s1 = (r6*r6+ r7*r7-0.408*0.408-0.376*0.376)/(2*0.408*0.376);
-    s1 =nearZero(s1-1)+1;
-    double alpha =atan2(r6,r7);
-    double s2 = (r6*r6+ r7*r7+0.408*0.408-0.376*0.376)/(2*0.408*sqrt(r6*r6+ r7*r7));
-    s2 =nearZero(s2-1)+1;
-    theta3[0] = acos(s1);
-    theta3[1] = -acos(s1);
-    theta2[0] = acos(s2)+ alpha;
-    theta2[1] = -acos(s2)+ alpha;
-    theta4[0] = sum_theta[0]-theta2[0]+theta3[0];
-    theta4[1] = sum_theta[0]-theta2[1]+theta3[1];
-
-    e_i1<<cos(theta1[0]),sin(theta1[0]),0,0,
-          -sin(theta1[0]),cos(theta1[0]),0,0,
-          0,0,1,0,
-          0,0,0,1;
-    e_i6<<cos(theta6[1]),0,-sin(theta6[1]),sin(theta6[1])*0.8865,
-            0,1,0,0,
-            sin(theta6[1]),0,cos(theta6[1]),(1-cos(theta6[1]))*0.8865,
-            0,0,0,1;
-    e_i5<<cos(theta5[1]),sin(theta5[1]),0,-0.1215*sin(theta5[1]),
-     -sin(theta5[1]),cos(theta5[1]),0,0.1215*(1-cos(theta6[1])),
-     0,0,1,0,
-     0,0,0,1;
-
-    M3 =e_i1*M1*e_i6*e_i5;
-
-    r6 = M3(0,3)+0.784*sin(sum_theta[1]);
-    r7 = M3(2,3)+0.784*cos(sum_theta[1]);
-    s1 = (r6*r6+ r7*r7-0.408*0.408-0.376*0.376)/(2*0.408*0.376);
-    s1 =nearZero(s1-1)+1;
-    alpha =atan2(r6,r7);
-    s2 = (r6*r6+ r7*r7+0.408*0.408-0.376*0.376)/(2*0.408*sqrt(r6*r6+ r7*r7));
-    s2 =nearZero(s2-1)+1;
-    theta3[2] = acos(s1);
-    theta3[3] = -acos(s1);
-    theta2[2] = acos(s2) + alpha;
-    theta2[3] = -acos(s2)+ alpha;
-    theta4[2] = sum_theta[1]-theta2[2]+theta3[2];
-    theta4[3] = sum_theta[1]-theta2[3]+theta3[3];
-
-    e_i1<<cos(theta1[1]),sin(theta1[1]),0,0,
-            -sin(theta1[1]),cos(theta1[1]),0,0,
-            0,0,1,0,
-            0,0,0,1;
-    e_i6<<cos(theta6[2]),0,-sin(theta6[2]),sin(theta6[2])*0.8865,
-            0,1,0,0,
-            sin(theta6[2]),0,cos(theta6[2]),(1-cos(theta6[2]))*0.8865,
-            0,0,0,1;
-    e_i5<<cos(theta5[2]),sin(theta5[2]),0,-0.1215*sin(theta5[2]),
-            -sin(theta5[2]),cos(theta5[2]),0,0.1215*(1-cos(theta6[2])),
-            0,0,1,0,
-            0,0,0,1;
-    M3 =e_i1*M1*e_i6*e_i5;
-    r6 = M3(0,3)+0.784*sin(sum_theta[2]);
-    r7 = M3(2,3)+0.784*cos(sum_theta[2]);
-    s1 = (r6*r6+ r7*r7-0.408*0.408-0.376*0.376)/(2*0.408*0.376);
-    s1 =nearZero(s1-1)+1;
-    alpha =atan2(r6,r7);
-    s2 = (r6*r6+ r7*r7+0.408*0.408-0.376*0.376)/(2*0.408*sqrt(r6*r6+ r7*r7));
-    s2 =nearZero(s2-1)+1;
-    theta3[4] = acos(s1);
-    theta3[5] = -acos(s1);
-    theta2[4] = acos(s2) + alpha;
-    theta2[5] = -acos(s2) + alpha;
-    theta4[4] = sum_theta[2]-theta2[4]+theta3[4];
-    theta4[5] = sum_theta[2]-theta2[5]+theta3[5];
-
-    e_i1<<cos(theta1[1]),sin(theta1[1]),0,0,
-            -sin(theta1[1]),cos(theta1[1]),0,0,
-            0,0,1,0,
-            0,0,0,1;
-    e_i6<<cos(theta6[3]),0,-sin(theta6[3]),sin(theta6[3])*0.8865,
-            0,1,0,0,
-            sin(theta6[3]),0,cos(theta6[3]),(1-cos(theta6[3]))*0.8865,
-            0,0,0,1;
-    e_i5<<cos(theta5[3]),sin(theta5[3]),0,-0.1215*sin(theta5[3]),
-            -sin(theta5[3]),cos(theta5[3]),0,0.1215*(1-cos(theta6[3])),
-            0,0,1,0,
-            0,0,0,1;
-    M3 =e_i1*M1*e_i6*e_i5;
-
-    r6 = M3(0,3)+0.784*sin(sum_theta[1]);
-    r7 = M3(2,3)+0.784*cos(sum_theta[1]);
-    s1 = (r6*r6+ r7*r7-0.408*0.408-0.376*0.376)/(2*0.408*0.376);
-    s1 =nearZero(s1-1)+1;
-    alpha =atan2(r6,r7);
-    s2 = (r6*r6+ r7*r7+0.408*0.408-0.376*0.376)/(2*0.408*sqrt(r6*r6+ r7*r7));
-    s2 =nearZero(s2-1)+1;
-    theta3[6] = acos(s1);
-    theta3[7] = -acos(s1);
-    theta2[6] = acos(s2) + alpha;
-    theta2[7] = -acos(s2) + alpha;
-    theta4[6] = sum_theta[1]-theta2[6]+theta3[6];
-    theta4[7] = sum_theta[1]-theta2[7]+theta3[7];
-
-    clock_t end(clock());
-    std::cout<<(double)(end-start)/CLOCKS_PER_SEC<<std::endl;
+    return num_solutions!=0;
 }

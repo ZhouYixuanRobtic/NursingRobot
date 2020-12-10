@@ -21,10 +21,8 @@ protected:
     inline bool nIkInSpace(const Eigen::Affine3d & desired_pose,Eigen::VectorXd& joint_angles, double eomg, double ev);
     inline bool nIkInBody(const Eigen::Affine3d & desired_pose,Eigen::VectorXd& joint_angles, double eomg, double ev);
 
-    inline double nearZero(double val){return (std::abs(val)<1e-8) ? 0: val;};
+    static inline double nearZero(double val){return (std::abs(val)<1e-8) ? 0: val;};
 
-    static int SIGN(double x){return (x>0)-(x<0);};
-    static inline double customAtan2(double y,double x);
 
 
 public:
@@ -37,7 +35,7 @@ public:
     void addMount(const LieGroup::SE3 & mount_configuration){mount_configuration_ = mount_configuration;};
 
     inline Eigen::VectorXd nearestIkSolution(const Eigen::Affine3d & desired_pose);
-    inline int allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 & desired_pose);
+    inline bool allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 & a);
 
     inline Eigen::MatrixXd jacobianSpace(const Eigen::VectorXd & joint_angles);
     inline Eigen::MatrixXd jacobianBody(const Eigen::VectorXd &joint_angles);
@@ -47,7 +45,7 @@ public:
                         Eigen::Affine3d{mount_configuration_.SE3Matrix()*fkInSpace(joint_angles)*ee_configuration_.SE3Matrix()};};
     bool nIk(Eigen::Affine3d desired_pose,Eigen::VectorXd& joint_angles, double eomg=1e-7, double ev=5e-7)
     {
-        desired_pose.matrix() = (mount_configuration_.inverse().SE3Matrix())*desired_pose.matrix()*(ee_configuration_.inverse().SE3Matrix());
+        desired_pose.matrix() = (mount_configuration_.SE3Matrix().inverse())*desired_pose.matrix()*(ee_configuration_.SE3Matrix().inverse());
         return IN_BODY_ ? nIkInBody(desired_pose,joint_angles,eomg,ev): nIkInSpace(desired_pose,joint_angles,eomg,ev);};
     /*
     virtual LieGroup::R6 changeReference() =0;

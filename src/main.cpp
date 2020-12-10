@@ -24,13 +24,16 @@ int main()
     robotModel.addMount(mount_configuration);
 
     Eigen::VectorXd joint_angles(6);
-    joint_angles<<1,1,1,1,1,1;
+    joint_angles<<0,0,0,0,0.1,0;
 
-    //std::cout<<robotModel.fk(joint_angles).matrix()<<std::endl;
-    LieGroup::SE_3 desired_pose =(mount_configuration.SE3Matrix().inverse())*robotModel.fk(joint_angles).matrix()*(ee_configuration.SE3Matrix().inverse());
+    Eigen::MatrixXd joint_solutions;
     clock_t start(clock());
-    std::vector<Eigen::VectorXd> a = robotModel.allIkSolutions(desired_pose);
+    if(robotModel.allIkSolutions(joint_solutions,robotModel.fk(joint_angles).matrix()))
+    {
+        clock_t end(clock());
+        std::cout<<1e6*(double)(end-start)/CLOCKS_PER_SEC<<"us"<<std::endl;
+        for(int i=0;i<joint_solutions.cols();++i)
+            std::cout<<joint_solutions.col(i).transpose()<<std::endl;
+    }
 
-    for(const auto & a_e : a)
-        std::cout<<a_e.transpose()<<std::endl;
 }
