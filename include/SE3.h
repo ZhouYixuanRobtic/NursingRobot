@@ -28,9 +28,10 @@ namespace LieGroup{
     //adjoint matrix 6X6 for Lie bracket
     typedef Eigen::Matrix<double,6,6> adjoint_mat;
 
+
     static bool NearZero(const double val)
     {
-        return (std::abs(val)<0.000001);
+        return (std::abs(val)<1e-8);
     }
 
     static so_3 VecToso3(const Eigen::Vector3d & omega)
@@ -95,6 +96,7 @@ namespace LieGroup{
         const SO_3 & SO3Matrix() const{return SO3_MATRIX_;};
         so_3 unitso3Matrix() const {return calUnitso3();};
         so_3 so3Matrix() const {return calso3();};
+        Eigen::Vector4d quaternion() const {Eigen::Quaterniond rotation{SO3_MATRIX_}; return rotation.coeffs();};
         static SO_3 MatrixExp(const so_3 & so3_) ;
         static so_3 MatrixLog(const SO_3 & SO3_) ;
 
@@ -143,7 +145,12 @@ namespace LieGroup{
         static SE_3 MatrixExp(const se_3 & se3_);
         static se_3 MatrixLog(const SE_3 & SE3_);
         SO3 SO3Part() const{R3 omega{twist_3d_.block<3,1>(0,0)};return SO3(omega);};
-
+        Eigen::Matrix<double,7,1> pose_with_quaternion() const
+        {
+            Eigen::Matrix<double,7,1> result;
+            result<<SE3_MATRIX_.block<3,1>(0,3),SO3Part().quaternion();
+            return result;
+        };
         adjoint_mat Adjoint();
         static R6 getNormalizedTwist(const R6 & twist);
         SE3 inverse()const{R6 twist = -Axis() * Theta();return SE3(twist);};

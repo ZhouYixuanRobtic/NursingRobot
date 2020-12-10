@@ -168,8 +168,8 @@ SE3::SE3(const R6 &twist)
 }
 SE3::SE3(const SE_3 &transformation_matrix)
 {
-    R6 twist(se3ToVec(MatrixLog(transformation_matrix)));
-    *this = SE3(twist);
+    twist_3d_ = se3ToVec(MatrixLog(transformation_matrix));
+    SE3_MATRIX_ = transformation_matrix;
 }
 SE3::SE3(const Eigen::Affine3d &transformation_matrix)
 {
