@@ -24,16 +24,31 @@ int main()
     robotModel.addMount(mount_configuration);
 
     Eigen::VectorXd joint_angles(6);
-    joint_angles<<0,0,0,0,0.1,0;
+    joint_angles<<1,1,1,1,1,1;
 
-    Eigen::MatrixXd joint_solutions;
+    Eigen::VectorXd initial_angles(6);
+    initial_angles<<1,1,1,1,-0.1,1;
+
     clock_t start(clock());
-    if(robotModel.allIkSolutions(joint_solutions,robotModel.fk(joint_angles).matrix()))
+    Eigen::Affine3d desired_pose{robotModel.fk(joint_angles).matrix()};
+    clock_t end(clock());
+    Eigen::MatrixXd joint_solutions;
+    std::cout<<1e6*(double)(end-start)/CLOCKS_PER_SEC<<"us"<<std::endl;
+    start = clock();
+    if(robotModel.allValidIkSolutions(joint_solutions,desired_pose.matrix(),initial_angles))
     {
-        clock_t end(clock());
+        end = clock();
         std::cout<<1e6*(double)(end-start)/CLOCKS_PER_SEC<<"us"<<std::endl;
-        for(int i=0;i<joint_solutions.cols();++i)
+        for(int i=0; i<joint_solutions.cols(); ++i)
+        {
             std::cout<<joint_solutions.col(i).transpose()<<std::endl;
+        }
     }
+
+
+
+
+
+
 
 }

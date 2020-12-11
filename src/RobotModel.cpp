@@ -99,7 +99,7 @@ inline Eigen::MatrixXd RobotModel::jacobianBody(const Eigen::VectorXd & joint_an
     }
     return jacobian_matrix;
 }
-inline bool RobotModel::nIkInSpace(const Eigen::Affine3d &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInSpace(const LieGroup::SE_3 &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
 {
     /*
      * jacobian iterative method
@@ -122,9 +122,13 @@ inline bool RobotModel::nIkInSpace(const Eigen::Affine3d &desired_pose,Eigen::Ve
         Vs = LieGroup::getAdjoint(Tfk)*LieGroup::SE3(Tdiff).Vector();
         err = (Vs.block<3,1>(0,0).norm() > eomg || Vs.block<3,1>(3,0).norm() > ev);
     }
+    for(int j =0; j<joint_angles.size(); ++j)
+    {
+        joint_angles[j] = nearZero(joint_angles[j]);
+    }
     return !err;
 }
-inline bool RobotModel::nIkInBody(const Eigen::Affine3d &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInBody(const LieGroup::SE_3 &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
 {
     int i = 0;
     int max_iterations = 50;
@@ -144,23 +148,18 @@ inline bool RobotModel::nIkInBody(const Eigen::Affine3d &desired_pose,Eigen::Vec
         Vb = LieGroup::SE3(Tdiff).Vector();
         err = (Vb.block<3,1>(0,0).norm() > eomg || Vb.block<3,1>(3,0).norm() > ev);
     }
+    for(int j =0; j<joint_angles.size(); ++j)
+    {
+        joint_angles[j] = nearZero(joint_angles[j]);
+    }
     return !err;
 }
-inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose)
-{
-    //return the nearest ik solution
-    Eigen::VectorXd solution{current_joint_angles_};
-    if(nIk(desired_pose,solution))
-        return solution;
-    else
-        return current_joint_angles_;
-}
-
-inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion)
+inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion,double theta6_ref)
 {
     LieGroup::SE_3 a{mount_configuration_.SE3Matrix().inverse()*desired_motion*ee_configuration_.SE3Matrix().inverse()};
     double h1=0.1215,d1=0.4080,d2=0.3760,d= 0.8865,d1p2 =0.7840,h2=0.21550;
     int num_solutions{};
+    bool wrist_singular{},elbow_singular{};
 
     //step 1 calculate p1
     LieGroup::SE_3 M1{a * home_configuration_.SE3Matrix().inverse()};
@@ -171,7 +170,7 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
     //in case of very small negative value;
     double r1 = p1[0]*p1[0]+p1[1]*p1[1]-h1*h1;
     r1 = nearZero(r1);
-    if(r1<0.0) return false;
+    if(r1<0.0) return NO_SOLUTIONS;
     double solutions[8][6];
     r1 = sqrt(r1);
     double theta1[2] = {atan2(p1[1]*r1-h1*p1[0],p1[1]*h1+p1[0]*r1),
@@ -182,7 +181,7 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
     for(int i=0; i<2; ++i)
     {
         double r3 = a(1, 2) * cos(theta1[i]) - a(0, 2) * sin(theta1[i]);
-        r3 = nearZero(r3-1)+1;
+        r3 = (SIGN(r3))*(nearZero(fabs(r3)-1)+1);
         theta5[i*2+0] =acos(r3);theta5[i*2+1]=-acos(r3);
     }
 
@@ -193,14 +192,20 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
         for(int j=0; j<2; ++j)
         {
             int index = i*2+j;
-            if(fabs(sin(theta5[index])) < 1e-8) break;
+            if(fabs(sin(theta5[index])) < 1e-8)
+            {
+                wrist_singular = true;
+                theta6 = theta6_ref;
+            }
+            else
+            {
+                double r4 = a(1, 1) * cos(theta1[i]) - a(0, 1) * sin(theta1[i]);
+                double r2 = a(0, 0) * sin(theta1[i]) - a(1, 0) * cos(theta1[i]);
+                theta6 = atan2(r4/sin(theta5[index]),r2/sin(theta5[index]));
+                theta6 = nearZero(theta6);
+            }
 
-            double r4 = a(1, 1) * cos(theta1[i]) - a(0, 1) * sin(theta1[i]);
-            double r2 = a(0, 0) * sin(theta1[i]) - a(1, 0) * cos(theta1[i]);
-            double r5 = a(0, 2) * cos(theta1[i]) + a(1, 2) * sin(theta1[i]);
-            theta6 = atan2(r4/sin(theta5[index]),r2/sin(theta5[index]));
-            sum_theta= atan2(a(2, 2) / sin(theta5[index]), -r5 / sin(theta5[index]));
-
+            //step 4 solving theta2 theta3 theta4
             LieGroup::SE_3 e_i1,e_i5,e_i6;
             e_i1<<cos(theta1[i]),sin(theta1[i]),0,0,
                     -sin(theta1[i]),cos(theta1[i]),0,0,
@@ -215,14 +220,20 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
                     0,0,1,0,
                     0,0,0,1;
             LieGroup::SE_3 M3{e_i1*M1*e_i6*e_i5};
-            double r6 = M3(0,3)+d1p2*sin(sum_theta);
-            double r7 = M3(2,3)+d1p2*cos(sum_theta);
+            double r6 = M3(0,3)+d1p2*M3(0,2);
+            double r7 = M3(2,3)+d1p2*M3(0,0);
+            sum_theta = atan2(M3(0,2),M3(0,0));
             double s1 = (r6*r6+ r7*r7-d1*d1-d2*d2)/(2*d1*d2);
-            s1 =nearZero(s1-1)+1;
-            if(fabs(s1)>1) continue;
+            s1 =SIGN(s1)*(nearZero(fabs(s1)-1)+1);
+            if(fabs(s1)>1)
+            {
+                elbow_singular = true;
+                continue;
+            }
+            elbow_singular =false;
             double alpha =atan2(r6,r7);
             double s2 = (r6*r6+r7*r7+d1*d1-d2*d2)/(2*d1*sqrt(r6*r6+r7*r7));
-            s2 =nearZero(s2-1)+1;
+            s2 = (SIGN(s2))*(nearZero(fabs(s2)-1)+1);
             theta3[0] = acos(s1);
             theta3[1] = -acos(s1);
             theta2[0] = acos(s2)+ alpha;
@@ -233,9 +244,9 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
             for(int k =0; k<2;++k)
             {
                 solutions[num_solutions][0] = theta1[i];
-                solutions[num_solutions][1] = theta2[k];
-                solutions[num_solutions][2] = theta3[k];
-                solutions[num_solutions][3] = theta4[k];
+                solutions[num_solutions][1] = restrict(theta2[k]);
+                solutions[num_solutions][2] = restrict(theta3[k]) ;
+                solutions[num_solutions][3] = restrict(theta4[k]);
                 solutions[num_solutions][4] = theta5[index];
                 solutions[num_solutions][5] = theta6;
                 num_solutions ++;
@@ -251,6 +262,61 @@ inline bool RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const Li
             memcpy(joint_solutions.col(i).data(),solutions[i],6*sizeof(double));
         }
     }
+    if(wrist_singular)
+        return WRIST_SINGULAR;
+    if(elbow_singular)
+        return ELBOW_SINGULAR;
 
-    return num_solutions!=0;
+    return num_solutions ==0 ? NO_SOLUTIONS: SUCCESS;
+}
+inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose, const Eigen::VectorXd & reference, bool isConsecutive)
+{
+    //return the nearest ik solution
+    Eigen::VectorXd solution{reference};
+    Eigen::MatrixXd joint_solutions;
+    RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
+    //TODO:: delete sel-collision, collision, and out-of-range solutions;
+    if(!isConsecutive && joint_solutions.cols() == 0 ) return reference;
+    else if(joint_solutions.cols() == 0 ||isConsecutive && ret_code == WRIST_SINGULAR)
+    {
+        if(nIk(desired_pose,solution))
+            return solution;
+        else
+            return reference;
+    }
+    else
+    {
+        std::vector<double> norm_box;
+        for(int i=0; i<joint_solutions.cols(); ++i)
+        {
+            norm_box.push_back((joint_solutions.col(i)-reference).norm());
+        }
+        return joint_solutions.col(std::distance(norm_box.begin(),std::min_element(norm_box.begin(),norm_box.end())));
+    }
+}
+inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const LieGroup::SE_3 &desired_pose,const Eigen::VectorXd &reference)
+{
+    //only use in consecutive mode
+    Eigen::VectorXd solution{reference};
+    RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose);
+    if(ret_code == NO_SOLUTIONS)
+    {
+        if(nIk(desired_pose,solution))
+        {
+            joint_solutions = solution;
+        }
+        else
+            return false;
+    }
+    else if(ret_code == WRIST_SINGULAR)
+    {
+        if(nIk(desired_pose,solution))
+        {
+            ret_code = allIkSolutions(joint_solutions,desired_pose,solution[5]);
+        }
+        else
+            return false;
+    }
+    return true;
+
 }
