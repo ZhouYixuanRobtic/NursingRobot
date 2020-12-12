@@ -262,37 +262,14 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
             memcpy(joint_solutions.col(i).data(),solutions[i],6*sizeof(double));
         }
     }
+    if(num_solutions == 0)
+        return NO_SOLUTIONS;
     if(wrist_singular)
         return WRIST_SINGULAR;
     if(elbow_singular)
         return ELBOW_SINGULAR;
 
-    return num_solutions ==0 ? NO_SOLUTIONS: SUCCESS;
-}
-inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose, const Eigen::VectorXd & reference, bool isConsecutive)
-{
-    //return the nearest ik solution
-    Eigen::VectorXd solution{reference};
-    Eigen::MatrixXd joint_solutions;
-    RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
-    //TODO:: delete sel-collision, collision, and out-of-range solutions;
-    if(!isConsecutive && joint_solutions.cols() == 0 ) return reference;
-    else if(joint_solutions.cols() == 0 ||isConsecutive && ret_code == WRIST_SINGULAR)
-    {
-        if(nIk(desired_pose,solution))
-            return solution;
-        else
-            return reference;
-    }
-    else
-    {
-        std::vector<double> norm_box;
-        for(int i=0; i<joint_solutions.cols(); ++i)
-        {
-            norm_box.push_back((joint_solutions.col(i)-reference).norm());
-        }
-        return joint_solutions.col(std::distance(norm_box.begin(),std::min_element(norm_box.begin(),norm_box.end())));
-    }
+    return SUCCESS;
 }
 inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const LieGroup::SE_3 &desired_pose,const Eigen::VectorXd &reference)
 {
@@ -319,4 +296,56 @@ inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, co
     }
     return true;
 
+}
+inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose, const Eigen::VectorXd & reference, bool isConsecutive)
+{
+    //return the nearest ik solution
+    Eigen::VectorXd solution{reference};
+    Eigen::MatrixXd joint_solutions;
+    RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
+    //TODO:: delete sel-collision, collision, and out-of-range solutions;
+    if(!isConsecutive && joint_solutions.cols() == 0 ) return reference;
+    else if(joint_solutions.cols() == 0 ||isConsecutive && ret_code == WRIST_SINGULAR)
+    {
+        if(nIk(desired_pose,solution,1e-8,1e-8))
+            return solution;
+        else
+            return reference;
+    }
+    else
+    {
+        std::vector<double> norm_box;
+        for (int i = 0; i < joint_solutions.cols(); ++i)
+        {
+            norm_box.push_back(distanceInJointSpace(joint_solutions.col(i),reference));
+        }
+        return joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end())));
+    }
+}
+inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine3d &desired_pose,const Eigen::VectorXd &reference,const LieGroup::R6 &tangent_reference)
+{
+    Eigen::VectorXd solution{reference};
+    Eigen::MatrixXd joint_solutions;
+    RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
+    if(joint_solutions.cols() == 0 || ret_code == WRIST_SINGULAR)
+    {
+        if(nIk(desired_pose,solution,1e-8,1e-8))
+            return solution;
+        else
+            return reference;
+    }
+    else
+    {
+        std::vector<double> norm_box;
+        for (int i = 0; i < joint_solutions.cols(); ++i)
+        {
+            LieGroup::R6 joint_tangent{joint_solutions.col(i)-reference};
+            for(int j=0; j<6;++j)
+            {
+                joint_tangent[j] =restrict(joint_tangent[j]);
+            }
+            norm_box.push_back(distanceInJointSpace(joint_tangent,tangent_reference));
+        }
+        return joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end())));
+    }
 }

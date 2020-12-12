@@ -27,7 +27,15 @@ protected:
     static double nearZero(const double& val){return (std::abs(val)<1e-8) ? 0.0: val;};
     static double restrict(double val){if(val>M_PI)val -= 2*M_PI;else if(val< -M_PI)val+=2*M_PI;return val;};
     static int SIGN(double val){return (val>0) - (val<0);}
-
+    static double distanceInJointSpace(const LieGroup::R6 &start, const LieGroup::R6& end)
+    {
+        LieGroup::R6 joint_tangent{end - start};
+        for (int j = 0; j < 6; ++j)
+        {
+            joint_tangent[j] =restrict(joint_tangent[j]);
+        }
+        return joint_tangent.norm();
+    }
 
 public:
     enum IK_SINGULAR_CODE{
@@ -44,7 +52,10 @@ public:
     void addEndEffector(const LieGroup::SE3 & ee_configuration){ee_configuration_ = ee_configuration;};
     void addMount(const LieGroup::SE3 & mount_configuration){mount_configuration_ = mount_configuration;};
 
+    //ToDo: move this to planner, and rename it as nearestIkSolutionsList
     inline Eigen::VectorXd nearestIkSolution(const Eigen::Affine3d & desired_pose,const Eigen::VectorXd & reference,bool isConsecutive = false);
+    inline Eigen::VectorXd directedNearestIkSolution(const Eigen::Affine3d & desired_pose,const Eigen::VectorXd & reference, const LieGroup::R6 & tangent_reference);
+
     inline IK_SINGULAR_CODE allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 & desire_pose,double theta6_ref =0.0);
     inline bool allValidIkSolutions(Eigen::MatrixXd & joint_soultions, const LieGroup::SE_3 & desired_pose,const Eigen::VectorXd & reference);
 

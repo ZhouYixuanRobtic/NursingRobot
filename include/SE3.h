@@ -102,6 +102,7 @@ namespace LieGroup{
 
         SO3 inverse() const{R3 twist = -Axis() * Theta();return SO3(twist);};
         SO3 interp(double lambda, const SO3 & destination) const ;
+        SO3 random() const ;
     };
 
     class SE3 {
@@ -118,6 +119,7 @@ namespace LieGroup{
         explicit SE3(const Eigen::Matrix<double,7,1> & pose_with_quaternion);
         explicit SE3(const Eigen::Affine3d & transformation_matrix);
         explicit SE3(const SE_3 & transformation_matrix);
+        explicit SE3(const SO3 & SO3_part, const Eigen::Vector3d & translation_part);
 
 
         ~SE3() = default;

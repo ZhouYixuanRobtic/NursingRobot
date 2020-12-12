@@ -98,6 +98,22 @@ SO3 SO3::interp(double lambda, const SO3 & destination) const
 {
     return *this+((destination-*this)*lambda);
 }
+SO3 SO3::random() const
+{
+    //Effective Sampling and Distance Metrics for 3D Rigid Body Path Planning [c]
+    //James J. Kuffner
+    //only use the uniformly sampling unit quaternion
+    static std::random_device rd;
+    static std::default_random_engine randomEngine(rd());
+    static std::uniform_real_distribution<double> x_distribution(0,1);
+    double s = x_distribution(randomEngine);
+    double sigma1 = std::sqrt(1-s);
+    double sigma2 = std::sqrt(s);
+    double theta1 = 2*M_PI*x_distribution(randomEngine);
+    double theta2 = 2*M_PI*x_distribution(randomEngine);
+    Eigen::Vector4d random_quaternion{sin(theta1)*sigma1,cos(theta1)*sigma1,sin(theta2)*sigma2,cos(theta2)*sigma2};
+    return SO3(random_quaternion);
+}
 
 
 SE_3 SE3::MatrixExp(const se_3 &se3_)
@@ -184,7 +200,13 @@ SE3::SE3(const Eigen::Matrix<double, 7, 1> &pose_with_quaternion)
     transformation_matrix.linear() = rotation.toRotationMatrix();
     *this = SE3(transformation_matrix);
 }
-
+SE3::SE3(const SO3 &SO3_part, const Eigen::Vector3d &translation_part)
+{
+    LieGroup::SE_3 transformation_matrix;
+    transformation_matrix<<SO3_part.SO3Matrix(),translation_part,
+                            0,0,0,1;
+    *this = SE3(transformation_matrix);
+}
 SE3 SE3::operator+(const SE3 & input)const
 {
     SE_3 tmp_matrix{this->SE3_MATRIX_*input.SE3_MATRIX_};
