@@ -62,10 +62,10 @@ int main()
     initial_angles<<1,1,1,1,-0.1,1;
     std::random_device rd;
     std::default_random_engine randomEngine(rd());
-    std::uniform_real_distribution<double> x_distribution(-M_PI,M_PI);
+    std::uniform_real_distribution<double> x_distribution(-3.05,3.05);
     clock_t start,end;
-    double interval{}; int counter =0;
-    /* test 1 for non-secutive mode;
+    double interval{}; double counter =0;
+     //test 1 for non-secutive mode;
     for(int i = 0; i<1E7; ++i)
     {
         Eigen::VectorXd random_angles(6);
@@ -77,14 +77,16 @@ int main()
         Eigen::MatrixXd joint_solutions;
         RobotModel::IK_SINGULAR_CODE ret=robotModel.allIkSolutions(joint_solutions,desired_pose.matrix());
         end = clock();
-        interval += (double)(end-start)/CLOCKS_PER_SEC;
+        interval += end-start;
         if(ret != RobotModel::NO_SOLUTIONS)
         {
             LieGroup::SE3 test_result(robotModel.fk(joint_solutions.col(0)).matrix());
-
+            if((test_result-origin).Vector().norm()<1e-3)
+                counter++;
         }
-    }*/
-    for(int i = 0; i<1e4; ++i)
+    }
+    /*
+    for(int i = 0; i<1; ++i)
     {
         Eigen::VectorXd random_start_angles(6);
         random_start_angles<<x_distribution(randomEngine),x_distribution(randomEngine),x_distribution(randomEngine)
@@ -106,9 +108,10 @@ int main()
                 result =robotModel.nearestIkSolution(desired_pose,reference,true);
             else
                 result =robotModel.directedNearestIkSolution(desired_pose,reference,tangent_reference);
+
             end = clock();
-            interval += (double)(end-start)/CLOCKS_PER_SEC;
-            if((result - random_angles).norm()<1e-4)
+            interval += (double)(end-start);
+            if((result - random_angles).norm()<5e-2)
             {
                 counter++;
             }
@@ -124,9 +127,9 @@ int main()
 
         }
 
-    }
-    std::cout<<"average time consumption: "<<1e6*interval/1e7 <<"us"<<std::endl;
-    std::cout<<"coverage rate "<<(double)counter/1e7<<std::endl;
+    }*/
+    std::cout<<0.1*interval/CLOCKS_PER_SEC<<"us\n";
+    std::cout<<"coverage rate "<<counter/1e7<<std::endl;
 
 
 

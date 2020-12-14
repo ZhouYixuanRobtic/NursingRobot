@@ -156,6 +156,8 @@ inline bool RobotModel::nIkInBody(const LieGroup::SE_3 &desired_pose,Eigen::Vect
 }
 inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion,double theta6_ref)
 {
+    LieGroup::R6 upper_bound; upper_bound.setConstant(3.05);
+    LieGroup::R6 lower_bound; lower_bound.setConstant(-3.05);
     LieGroup::SE_3 a{mount_configuration_.SE3Matrix().inverse()*desired_motion*ee_configuration_.SE3Matrix().inverse()};
     double h1=0.1215,d1=0.4080,d2=0.3760,d= 0.8865,d1p2 =0.7840,h2=0.21550;
     int num_solutions{};
@@ -249,7 +251,16 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
                 solutions[num_solutions][3] = restrict(theta4[k]);
                 solutions[num_solutions][4] = theta5[index];
                 solutions[num_solutions][5] = theta6;
-                num_solutions ++;
+
+                //num_solutions++;
+
+                //if any angle is outside the bound range do not accept this solution
+                LieGroup::R6 check_vector{};
+                memcpy(check_vector.data(),solutions[num_solutions],6*sizeof(double));
+                if(!(   ((check_vector-upper_bound).array()>0).any()||
+                        ((check_vector-lower_bound).array()<0).any() ))
+                    num_solutions++;
+
             }
         }
     }
@@ -257,6 +268,7 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
     if(num_solutions != 0)
     {
         joint_solutions.resize(6,num_solutions);
+        int index = 0;
         for(int i=0;i<num_solutions;++i)
         {
             memcpy(joint_solutions.col(i).data(),solutions[i],6*sizeof(double));
@@ -276,6 +288,8 @@ inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, co
     //only use in consecutive mode
     Eigen::VectorXd solution{reference};
     RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose);
+
+
     if(ret_code == NO_SOLUTIONS)
     {
         if(nIk(desired_pose,solution))
@@ -303,7 +317,7 @@ inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desi
     Eigen::VectorXd solution{reference};
     Eigen::MatrixXd joint_solutions;
     RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
-    //TODO:: delete sel-collision, collision, and out-of-range solutions;
+    //TODO:: delete sel-collision, collision, solutions;
     if(!isConsecutive && joint_solutions.cols() == 0 ) return reference;
     else if(joint_solutions.cols() == 0 ||isConsecutive && ret_code == WRIST_SINGULAR)
     {
