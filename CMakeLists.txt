@@ -21,6 +21,13 @@ if(NEW_YAMLCPP_FOUND)
     add_definitions(-DHAVE_NEW_YAMLCPP)
 endif(NEW_YAMLCPP_FOUND)
 
+# include cmake files in the 'cmake folder'
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+find_package(Flann REQUIRED)
+add_library(Flann STATIC IMPORTED)
+
+
 include_directories (
         SYSTEM
         include
@@ -32,10 +39,23 @@ link_directories(
         ${YAML_LIBRARIES}
 )
 
-add_library(SE3 src/SE3.cpp include/SE3.h)
+set(lib_SRC
+        src/StateSpace/SO3.cpp include/StateSpace/SO3.hpp
+        src/StateSpace/SE3.cpp include/StateSpace/SE3.hpp
+        src/StateSpace/R6.cpp include/StateSpace/R6.hpp)
+
+# add_library("RRT" STATIC ${lib_SRC})
+add_library("StateSpace" ${lib_SRC})
+
 
 add_library(RobotModel src/RobotModel.cpp)
-target_link_libraries(RobotModel SE3 ${YAML_LIBRARIES})
+target_link_libraries(RobotModel StateSpace ${YAML_LIBRARIES})
+
+add_library(RRT src/RRT.cpp)
+target_link_libraries(RRT StateSpace RobotModel)
+
+add_library(PlanningInterface src/PlanningInterface.cpp)
+target_link_libraries(PlanningInterface StateSpace RobotModel)
 
 add_executable(NursingRobot src/main.cpp)
-target_link_libraries(NursingRobot SE3 RobotModel ${YAML_LIBRARIES})
+target_link_libraries(NursingRobot StateSpace RobotModel ${YAML_LIBRARIES})

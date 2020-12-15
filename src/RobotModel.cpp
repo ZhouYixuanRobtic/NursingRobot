@@ -6,17 +6,17 @@
 #include "RobotModel.h"
 RobotModel::RobotModel(const std::string &yaml_name)
 {
-    ee_configuration_ = LieGroup::SE3();
-    mount_configuration_ = LieGroup::SE3();
+    ee_configuration_ = state_space::SE3();
+    mount_configuration_ = state_space::SE3();
     loadModel(yaml_name);
 }
-RobotModel::RobotModel(const std::vector<LieGroup::SE3> &all_screw_axes,const LieGroup::SE3 &home_configuration,bool isInBodyFrame)
+RobotModel::RobotModel(const std::vector<state_space::SE3> &all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame)
 {
     all_screw_axes_ = all_screw_axes;
     home_configuration_ = home_configuration;
     IN_BODY_ = isInBodyFrame;
-    ee_configuration_ = LieGroup::SE3();
-    mount_configuration_ = LieGroup::SE3();
+    ee_configuration_ = state_space::SE3();
+    mount_configuration_ = state_space::SE3();
     current_joint_angles_ = Eigen::VectorXd(all_screw_axes.size());
     current_joint_angles_.setZero();
 }
@@ -28,7 +28,7 @@ void RobotModel::loadModel(const std::string &yaml_name)
         std::vector<double> pose_with_quaternion = doc["aubo_i5"]["home_configuration"].as<std::vector<double>>();
         Eigen::Matrix<double,7,1> home_pose;
         memcpy(home_pose.data(),pose_with_quaternion.data(), pose_with_quaternion.size()*sizeof(double));
-        home_configuration_ = LieGroup::SE3(home_pose);
+        home_configuration_ = state_space::SE3(home_pose);
         IN_BODY_ = doc["aubo_i5"]["isInBodyFrame"].as<bool>();
         std::map<std::string,std::vector<double>> axes_map;
         axes_map = doc["aubo_i5"]["screw_axes"].as<std::map<std::string,std::vector<double>>>();
@@ -43,9 +43,9 @@ void RobotModel::loadModel(const std::string &yaml_name)
             }
             else
             {
-                LieGroup::R6 temp_twist;
+                state_space::R6 temp_twist;
                 memcpy(temp_twist.data(),it.second.data(), temp_twist.size()*sizeof(double));
-                all_screw_axes_.emplace_back(LieGroup::SE3(temp_twist));
+                all_screw_axes_.emplace_back(state_space::SE3(temp_twist));
             }
         }
     }
@@ -56,9 +56,9 @@ void RobotModel::loadModel(const std::string &yaml_name)
     current_joint_angles_ = Eigen::VectorXd(all_screw_axes_.size());
     current_joint_angles_.setZero();
 }
-inline LieGroup::SE_3 RobotModel::fkInSpace(const Eigen::VectorXd &joint_angles)
+inline state_space::SE_3 RobotModel::fkInSpace(const Eigen::VectorXd &joint_angles)
 {
-    LieGroup::SE_3 ee_pose{LieGroup::SE_3::Identity()};
+    state_space::SE_3 ee_pose{state_space::SE_3::Identity()};
     for (int i = 0; i < joint_angles.size(); ++i)
     {
         ee_pose = ee_pose* all_screw_axes_[i](joint_angles[i]).SE3Matrix();
@@ -66,9 +66,9 @@ inline LieGroup::SE_3 RobotModel::fkInSpace(const Eigen::VectorXd &joint_angles)
     ee_pose = ee_pose * home_configuration_.SE3Matrix();
     return ee_pose;
 }
-inline LieGroup::SE_3 RobotModel::fkInBody(const Eigen::VectorXd &joint_angles)
+inline state_space::SE_3 RobotModel::fkInBody(const Eigen::VectorXd &joint_angles)
 {
-    LieGroup::SE_3 ee_pose{home_configuration_.SE3Matrix()};
+    state_space::SE_3 ee_pose{home_configuration_.SE3Matrix()};
     for (int i = 0; i < joint_angles.size(); ++i)
     {
         ee_pose = ee_pose* all_screw_axes_[i](joint_angles[i]).SE3Matrix();
@@ -79,36 +79,36 @@ inline Eigen::MatrixXd RobotModel::jacobianSpace(const Eigen::VectorXd & joint_a
 {
     Eigen::MatrixXd jacobian_matrix(6,6);
     jacobian_matrix.col(0) = all_screw_axes_[0].Axis();
-    LieGroup::SE_3  tmp_matrix = LieGroup::SE_3::Identity();
+    state_space::SE_3  tmp_matrix = state_space::SE_3::Identity();
     for (int i = 1; i < joint_angles.size(); i++)
     {
         tmp_matrix = tmp_matrix * all_screw_axes_[i-1](joint_angles[i-1]).SE3Matrix();
-        jacobian_matrix.col(i) = LieGroup::getAdjoint(tmp_matrix) * all_screw_axes_[i].Axis();
+        jacobian_matrix.col(i) = state_space::GetAdjoint(tmp_matrix) * all_screw_axes_[i].Axis();
     }
     return jacobian_matrix;
 }
 inline Eigen::MatrixXd RobotModel::jacobianBody(const Eigen::VectorXd & joint_angles)
 {
     Eigen::MatrixXd jacobian_matrix(6,6);
-    LieGroup::SE_3  tmp_matrix = LieGroup::SE_3::Identity();
+    state_space::SE_3  tmp_matrix = state_space::SE_3::Identity();
     jacobian_matrix.col(joint_angles.size()-1) = all_screw_axes_[joint_angles.size()-1].Axis();
     for (int i = joint_angles.size() - 2; i >= 0; i--)
     {
         tmp_matrix = tmp_matrix * all_screw_axes_[i+1](-joint_angles[i+1]).SE3Matrix();
-        jacobian_matrix.col(i) = LieGroup::getAdjoint(tmp_matrix) * all_screw_axes_[i].Axis();
+        jacobian_matrix.col(i) = state_space::GetAdjoint(tmp_matrix) * all_screw_axes_[i].Axis();
     }
     return jacobian_matrix;
 }
-inline bool RobotModel::nIkInSpace(const LieGroup::SE_3 &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInSpace(const state_space::SE_3 &desired_pose, Eigen::VectorXd &joint_angles, double eomg, double ev)
 {
     /*
      * jacobian iterative method
      */
     int i = 0;
     int max_iterations = 50;
-    LieGroup::SE_3 Tfk = fkInSpace(joint_angles);
-    LieGroup::SE_3 Tdiff = Tfk.inverse() * desired_pose.matrix();
-    LieGroup::R6 Vs = LieGroup::getAdjoint(Tfk)*LieGroup::SE3(Tdiff).Vector();
+    state_space::SE_3 Tfk = fkInSpace(joint_angles);
+    state_space::SE_3 Tdiff = Tfk.inverse() * desired_pose.matrix();
+    state_space::R6 Vs = state_space::GetAdjoint(Tfk) * state_space::SE3(Tdiff).Vector();
     bool err = (Vs.block<3,1>(0,0).norm() > eomg || Vs.block<3,1>(3,0).norm() > ev);
     Eigen::MatrixXd Js;
     while (err && i < max_iterations)
@@ -119,7 +119,7 @@ inline bool RobotModel::nIkInSpace(const LieGroup::SE_3 &desired_pose,Eigen::Vec
         // iterate
         Tfk = fkInSpace(joint_angles);
         Tdiff = Tfk.inverse() * desired_pose.matrix();
-        Vs = LieGroup::getAdjoint(Tfk)*LieGroup::SE3(Tdiff).Vector();
+        Vs = state_space::GetAdjoint(Tfk) * state_space::SE3(Tdiff).Vector();
         err = (Vs.block<3,1>(0,0).norm() > eomg || Vs.block<3,1>(3,0).norm() > ev);
     }
     for(int j =0; j<joint_angles.size(); ++j)
@@ -128,13 +128,13 @@ inline bool RobotModel::nIkInSpace(const LieGroup::SE_3 &desired_pose,Eigen::Vec
     }
     return !err;
 }
-inline bool RobotModel::nIkInBody(const LieGroup::SE_3 &desired_pose,Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInBody(const state_space::SE_3 &desired_pose, Eigen::VectorXd &joint_angles, double eomg, double ev)
 {
     int i = 0;
     int max_iterations = 50;
-    LieGroup::SE_3 Tfk = fkInBody(joint_angles).matrix();
-    LieGroup::SE_3 Tdiff = Tfk.inverse() * desired_pose.matrix();
-    LieGroup::R6 Vb = LieGroup::SE3(Tdiff).Vector();
+    state_space::SE_3 Tfk = fkInBody(joint_angles).matrix();
+    state_space::SE_3 Tdiff = Tfk.inverse() * desired_pose.matrix();
+    state_space::R6 Vb = state_space::SE3(Tdiff).Vector();
     bool err = (Vb.block<3,1>(0,0).norm() > eomg || Vb.block<3,1>(3,0).norm() > ev);
     Eigen::MatrixXd Jb;
     while (err && i < max_iterations)
@@ -145,7 +145,7 @@ inline bool RobotModel::nIkInBody(const LieGroup::SE_3 &desired_pose,Eigen::Vect
         // iterate
         Tfk = fkInBody(joint_angles).matrix();
         Tdiff = Tfk.inverse() * desired_pose.matrix();
-        Vb = LieGroup::SE3(Tdiff).Vector();
+        Vb = state_space::SE3(Tdiff).Vector();
         err = (Vb.block<3,1>(0,0).norm() > eomg || Vb.block<3,1>(3,0).norm() > ev);
     }
     for(int j =0; j<joint_angles.size(); ++j)
@@ -154,17 +154,17 @@ inline bool RobotModel::nIkInBody(const LieGroup::SE_3 &desired_pose,Eigen::Vect
     }
     return !err;
 }
-inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions,const LieGroup::SE_3 &desired_motion,double theta6_ref)
+inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_motion, double theta6_ref)
 {
-    LieGroup::R6 upper_bound; upper_bound.setConstant(3.05);
-    LieGroup::R6 lower_bound; lower_bound.setConstant(-3.05);
-    LieGroup::SE_3 a{mount_configuration_.SE3Matrix().inverse()*desired_motion*ee_configuration_.SE3Matrix().inverse()};
+    state_space::R6 upper_bound; upper_bound.setConstant(3.05);
+    state_space::R6 lower_bound; lower_bound.setConstant(-3.05);
+    state_space::SE_3 a{mount_configuration_.SE3Matrix().inverse() * desired_motion * ee_configuration_.SE3Matrix().inverse()};
     double h1=0.1215,d1=0.4080,d2=0.3760,d= 0.8865,d1p2 =0.7840,h2=0.21550;
     int num_solutions{};
     bool wrist_singular{},elbow_singular{};
 
     //step 1 calculate p1
-    LieGroup::SE_3 M1{a * home_configuration_.SE3Matrix().inverse()};
+    state_space::SE_3 M1{a * home_configuration_.SE3Matrix().inverse()};
     double p1[2]{a(0, 3) + a(0, 2) * (h1 - h2),
                        a(1, 3) + a(1, 2) * (h1 - h2)};
 
@@ -208,7 +208,7 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
             }
 
             //step 4 solving theta2 theta3 theta4
-            LieGroup::SE_3 e_i1,e_i5,e_i6;
+            state_space::SE_3 e_i1,e_i5,e_i6;
             e_i1<<cos(theta1[i]),sin(theta1[i]),0,0,
                     -sin(theta1[i]),cos(theta1[i]),0,0,
                     0,0,1,0,
@@ -221,7 +221,7 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
                     -sin(theta5[index]),cos(theta5[index]),0,h1*(1-cos(theta5[index])),
                     0,0,1,0,
                     0,0,0,1;
-            LieGroup::SE_3 M3{e_i1*M1*e_i6*e_i5};
+            state_space::SE_3 M3{e_i1 * M1 * e_i6 * e_i5};
             double r6 = M3(0,3)+d1p2*M3(0,2);
             double r7 = M3(2,3)+d1p2*M3(0,0);
             sum_theta = atan2(M3(0,2),M3(0,0));
@@ -255,7 +255,7 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
                 //num_solutions++;
 
                 //if any angle is outside the bound range do not accept this solution
-                LieGroup::R6 check_vector{};
+                state_space::R6 check_vector{};
                 memcpy(check_vector.data(),solutions[num_solutions],6*sizeof(double));
                 if(!(   ((check_vector-upper_bound).array()>0).any()||
                         ((check_vector-lower_bound).array()<0).any() ))
@@ -283,7 +283,7 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
 
     return SUCCESS;
 }
-inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const LieGroup::SE_3 &desired_pose,const Eigen::VectorXd &reference)
+inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose, const Eigen::VectorXd &reference)
 {
     //only use in consecutive mode
     Eigen::VectorXd solution{reference};
@@ -336,7 +336,7 @@ inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desi
         return joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end())));
     }
 }
-inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine3d &desired_pose,const Eigen::VectorXd &reference,const LieGroup::R6 &tangent_reference)
+inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine3d &desired_pose,const Eigen::VectorXd &reference,const state_space::R6 &tangent_reference)
 {
     Eigen::VectorXd solution{reference};
     Eigen::MatrixXd joint_solutions;
@@ -353,7 +353,7 @@ inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine
         std::vector<double> norm_box;
         for (int i = 0; i < joint_solutions.cols(); ++i)
         {
-            LieGroup::R6 joint_tangent{joint_solutions.col(i)-reference};
+            state_space::R6 joint_tangent{joint_solutions.col(i) - reference};
             for(int j=0; j<6;++j)
             {
                 joint_tangent[j] =restrict(joint_tangent[j]);
