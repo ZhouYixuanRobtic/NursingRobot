@@ -33,7 +33,7 @@ namespace state_space{
         return R3{-a_so3(1, 2), a_so3(0, 2), -a_so3(0, 1)};
     }
 
-    class SO3 : public StateSpace<SO3>{
+    class SO3 : public virtual StateSpace<SO3>{
     private:
         R3 _twist_2d_{};
         SO_3 SO3_MATRIX_{};
@@ -94,7 +94,7 @@ namespace state_space{
             R3 twist = -Axis() * Theta();
             return SO3(twist);
         };
-        SO3 random(std::default_random_engine & randomEngine,const Eigen::MatrixXd * bounds_ptr) const override
+        SO3 random(std::default_random_engine & randomEngine,const Eigen::Matrix2Xd * bounds_ptr) const override
         {
             //Effective Sampling and Distance Metrics for 3D Rigid Body Path Planning [c]
             //James J. Kuffner

@@ -9,19 +9,19 @@ namespace planner{
     template <typename T>
     class RRT: public Planner<T> {
     protected:
-        std::vector<state_space::Rn> extractPath(const Vertex<T> & node_end) override;
+        std::vector<T> extractPath(const Vertex<T> & node_end) override;
         bool not_in_collision(){return true;};
-        state_space::Rn sample() override;
-        Vertex<T> get_nearest_neighbor(const state_space::Rn & current_state) override;
-        Vertex<T> generate_new_state(const Vertex<T> & nearest_vertex, const state_space::Rn & rand_state);
+        T sample() override;
+        Vertex<T> get_nearest_neighbor(const T & current_state) override;
+        Vertex<T> generate_new_state(const Vertex<T> & nearest_vertex, const T & rand_state);
 
         Vertex<T>* _head;
         Vertex<T>* _tail;
     public:
-        explicit RRT(const state_space::Rn & start, const state_space::Rn & goal, int iter_max, double step_len,
+        explicit RRT(const T & start, const T & goal, int iter_max, double step_len,
                      double goal_sample_rate);
         ~RRT();
-        std::vector<state_space::Rn> planning() override;
+        std::vector<T> planning() override;
     };
 }
 

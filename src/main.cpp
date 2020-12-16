@@ -4,6 +4,7 @@
 #include <ctime>
 #include "RobotModel.cpp"
 #include "StateSpace/StateSpace.hpp"
+#include "Planner.h"
 static double distanceInR6(const state_space::R6 &start, const state_space::R6& end)
 {
     state_space::R6 joint_tangent{end - start};
@@ -19,7 +20,7 @@ static double distanceInR6(const state_space::R6 &start, const state_space::R6& 
 
 static state_space::R6 bezierCurveSampleInJointSpace(const state_space::R6 &start, const state_space::R6& end, double lambda)
 {
-    state_space::R6 result = state_space::bezierInterpolate(start, end, lambda);
+    state_space::R6 result = planner::bezierInterpolate(start, end, lambda);
     for(int i=0; i<6;++i)
     {
         if(result[i]>M_PI)

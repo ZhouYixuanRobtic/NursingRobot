@@ -41,7 +41,7 @@ namespace state_space {
     }
 
 
-    class SE3 : public StateSpace<SE3> {
+    class SE3 : public virtual StateSpace<SE3> {
     protected:
         R6 _twist_3d_{};
 
@@ -145,7 +145,7 @@ namespace state_space {
             return SE3(twist);
         };
 
-        SE3 random(std::default_random_engine &randomEngine, const Eigen::MatrixXd *bounds_ptr) const override {
+        SE3 random(std::default_random_engine &randomEngine, const Eigen::Matrix2Xd *bounds_ptr) const override {
             //TODO:: SE3 random
             return SE3();
         };

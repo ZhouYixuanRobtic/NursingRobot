@@ -6,6 +6,7 @@
 #define NURSINGROBOT_ROBOTMODEL_H
 
 #include "StateSpace/SE3.hpp"
+#include "StateSpace/rn.hpp"
 #include <algorithm>
 #include <yaml-cpp/yaml.h>
 

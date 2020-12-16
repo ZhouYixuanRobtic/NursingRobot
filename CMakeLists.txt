@@ -42,7 +42,7 @@ link_directories(
 set(lib_SRC
         src/StateSpace/SO3.cpp include/StateSpace/SO3.hpp
         src/StateSpace/SE3.cpp include/StateSpace/SE3.hpp
-        src/StateSpace/R6.cpp include/StateSpace/R6.hpp)
+        include/StateSpace/JointSpace.hpp include/StateSpace/rn.hpp)
 
 # add_library("RRT" STATIC ${lib_SRC})
 add_library("StateSpace" ${lib_SRC})
