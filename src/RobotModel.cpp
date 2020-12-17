@@ -17,8 +17,7 @@ RobotModel::RobotModel(const std::vector<state_space::SE3> &all_screw_axes, cons
     IN_BODY_ = isInBodyFrame;
     ee_configuration_ = state_space::SE3();
     mount_configuration_ = state_space::SE3();
-    current_joint_angles_ = Eigen::VectorXd(all_screw_axes.size());
-    current_joint_angles_.setZero();
+    current_joint_angles_ = state_space::JointSpace(all_screw_axes.size());
 }
 void RobotModel::loadModel(const std::string &yaml_name)
 {
@@ -53,10 +52,9 @@ void RobotModel::loadModel(const std::string &yaml_name)
     {
        perror("tagParam.yaml is invalid.");
     }
-    current_joint_angles_ = Eigen::VectorXd(all_screw_axes_.size());
-    current_joint_angles_.setZero();
+    current_joint_angles_ = state_space::JointSpace(all_screw_axes_.size());
 }
-inline state_space::SE_3 RobotModel::fkInSpace(const Eigen::VectorXd &joint_angles)
+inline state_space::SE_3 RobotModel::fkInSpace(const state_space::JointSpace &joint_angles)
 {
     state_space::SE_3 ee_pose{state_space::SE_3::Identity()};
     for (int i = 0; i < joint_angles.size(); ++i)
@@ -66,7 +64,7 @@ inline state_space::SE_3 RobotModel::fkInSpace(const Eigen::VectorXd &joint_angl
     ee_pose = ee_pose * home_configuration_.SE3Matrix();
     return ee_pose;
 }
-inline state_space::SE_3 RobotModel::fkInBody(const Eigen::VectorXd &joint_angles)
+inline state_space::SE_3 RobotModel::fkInBody(const state_space::JointSpace &joint_angles)
 {
     state_space::SE_3 ee_pose{home_configuration_.SE3Matrix()};
     for (int i = 0; i < joint_angles.size(); ++i)
@@ -75,7 +73,7 @@ inline state_space::SE_3 RobotModel::fkInBody(const Eigen::VectorXd &joint_angle
     }
     return ee_pose;
 }
-inline Eigen::MatrixXd RobotModel::jacobianSpace(const Eigen::VectorXd & joint_angles)
+inline Eigen::MatrixXd RobotModel::jacobianSpace(const state_space::JointSpace & joint_angles)
 {
     Eigen::MatrixXd jacobian_matrix(6,6);
     jacobian_matrix.col(0) = all_screw_axes_[0].Axis();
@@ -87,7 +85,7 @@ inline Eigen::MatrixXd RobotModel::jacobianSpace(const Eigen::VectorXd & joint_a
     }
     return jacobian_matrix;
 }
-inline Eigen::MatrixXd RobotModel::jacobianBody(const Eigen::VectorXd & joint_angles)
+inline Eigen::MatrixXd RobotModel::jacobianBody(const state_space::JointSpace & joint_angles)
 {
     Eigen::MatrixXd jacobian_matrix(6,6);
     state_space::SE_3  tmp_matrix = state_space::SE_3::Identity();
@@ -99,7 +97,7 @@ inline Eigen::MatrixXd RobotModel::jacobianBody(const Eigen::VectorXd & joint_an
     }
     return jacobian_matrix;
 }
-inline bool RobotModel::nIkInSpace(const state_space::SE_3 &desired_pose, Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInSpace(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg, double ev)
 {
     /*
      * jacobian iterative method
@@ -128,7 +126,7 @@ inline bool RobotModel::nIkInSpace(const state_space::SE_3 &desired_pose, Eigen:
     }
     return !err;
 }
-inline bool RobotModel::nIkInBody(const state_space::SE_3 &desired_pose, Eigen::VectorXd &joint_angles, double eomg, double ev)
+inline bool RobotModel::nIkInBody(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg, double ev)
 {
     int i = 0;
     int max_iterations = 50;
@@ -246,19 +244,18 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
             for(int k =0; k<2;++k)
             {
                 solutions[num_solutions][0] = theta1[i];
-                solutions[num_solutions][1] = restrict(theta2[k]);
-                solutions[num_solutions][2] = restrict(theta3[k]) ;
-                solutions[num_solutions][3] = restrict(theta4[k]);
+                solutions[num_solutions][1] = theta2[k];
+                solutions[num_solutions][2] = theta3[k];
+                solutions[num_solutions][3] = theta4[k];
                 solutions[num_solutions][4] = theta5[index];
                 solutions[num_solutions][5] = theta6;
 
                 //num_solutions++;
 
                 //if any angle is outside the bound range do not accept this solution
-                state_space::R6 check_vector{};
+                state_space::JointSpace check_vector{};
                 memcpy(check_vector.data(),solutions[num_solutions],6*sizeof(double));
-                if(!(   ((check_vector-upper_bound).array()>0).any()||
-                        ((check_vector-lower_bound).array()<0).any() ))
+                if(check_vector.isValid(upper_bound,lower_bound))
                     num_solutions++;
 
             }
@@ -283,10 +280,10 @@ inline RobotModel::IK_SINGULAR_CODE RobotModel::allIkSolutions(Eigen::MatrixXd &
 
     return SUCCESS;
 }
-inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose, const Eigen::VectorXd &reference)
+inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference)
 {
     //only use in consecutive mode
-    Eigen::VectorXd solution{reference};
+    state_space::JointSpace solution{reference};
     RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose);
 
 
@@ -294,7 +291,7 @@ inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, co
     {
         if(nIk(desired_pose,solution))
         {
-            joint_solutions = solution;
+            joint_solutions= solution.Vector();
         }
         else
             return false;
@@ -311,10 +308,10 @@ inline bool RobotModel::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, co
     return true;
 
 }
-inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose, const Eigen::VectorXd & reference, bool isConsecutive)
+inline state_space::JointSpace RobotModel::nearestIkSolution(const Eigen::Affine3d &desired_pose, const state_space::JointSpace & reference, bool isConsecutive)
 {
     //return the nearest ik solution
-    Eigen::VectorXd solution{reference};
+    state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
     RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
     //TODO:: delete sel-collision, collision, solutions;
@@ -331,14 +328,14 @@ inline Eigen::VectorXd RobotModel::nearestIkSolution(const Eigen::Affine3d &desi
         std::vector<double> norm_box;
         for (int i = 0; i < joint_solutions.cols(); ++i)
         {
-            norm_box.push_back(distanceInJointSpace(joint_solutions.col(i),reference));
+            norm_box.push_back(reference.distance(joint_solutions.col(i)));
         }
-        return joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end())));
+        return state_space::JointSpace(joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end()))));
     }
 }
-inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine3d &desired_pose,const Eigen::VectorXd &reference,const state_space::R6 &tangent_reference)
+inline state_space::JointSpace RobotModel::directedNearestIkSolution(const Eigen::Affine3d &desired_pose,const state_space::JointSpace &reference,const state_space::JointSpace &tangent_reference)
 {
-    Eigen::VectorXd solution{reference};
+    state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
     RobotModel::IK_SINGULAR_CODE ret_code = allIkSolutions(joint_solutions,desired_pose.matrix());
     if(joint_solutions.cols() == 0 || ret_code == WRIST_SINGULAR)
@@ -353,13 +350,10 @@ inline Eigen::VectorXd RobotModel::directedNearestIkSolution(const Eigen::Affine
         std::vector<double> norm_box;
         for (int i = 0; i < joint_solutions.cols(); ++i)
         {
-            state_space::R6 joint_tangent{joint_solutions.col(i) - reference};
-            for(int j=0; j<6;++j)
-            {
-                joint_tangent[j] =restrict(joint_tangent[j]);
-            }
-            norm_box.push_back(distanceInJointSpace(joint_tangent,tangent_reference));
+            state_space::JointSpace joint_tangent{joint_solutions.col(i) - reference.Vector()};
+
+            norm_box.push_back(joint_tangent.distance(tangent_reference));
         }
-        return joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end())));
+        return state_space::JointSpace(joint_solutions.col(std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end()))));
     }
 }

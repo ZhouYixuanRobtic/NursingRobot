@@ -4,7 +4,8 @@
 #include <ctime>
 #include "RobotModel.cpp"
 #include "StateSpace/StateSpace.hpp"
-#include "Planner.h"
+#include "Planner.hpp"
+#include "RRT.hpp"
 static double distanceInR6(const state_space::R6 &start, const state_space::R6& end)
 {
     state_space::R6 joint_tangent{end - start};

@@ -2,18 +2,32 @@
 // Created by xcy on 2020/12/14.
 //
 
-#ifndef NURSINGROBOT_PLANNER_H
-#define NURSINGROBOT_PLANNER_H
+#ifndef NURSINGROBOT_PLANNER_HPP
+#define NURSINGROBOT_PLANNER_HPP
 #include <utility>
 
 #include "StateSpace/SE3.hpp"
-#include "RobotModel.h"
+#include "StateSpace/JointSpace.hpp"
+#include "StateSpace/SO3.hpp"
+#include "StateSpace/rn.hpp"
+#include <unordered_map>
+#include <deque>
+#include <flann/flann.hpp>
+#include <flann/algorithms/dist.h>
+#include <flann/algorithms/kdtree_single_index.h>
+#include <stdexcept>
+#include <type_traits>
+#include <functional>
+#include <cstdlib>
+#include <list>
 namespace planner{
 
     template <typename T>
     static T randomState(const Eigen::Matrix2Xd * bounds_ptr)
     {
-        return T().random(bounds_ptr);
+        static std::random_device rd;
+        static std::default_random_engine randomEngine(rd());
+        return T().random(randomEngine,bounds_ptr);
     }
 
     /**
@@ -87,32 +101,48 @@ namespace planner{
     template <typename T>
     class Vertex{
     public:
-        explicit Vertex(const T & data, const double distance_from_parent =0)
-                :_data(data),_parent(nullptr),_distance_from_parent(distance_from_parent){}
+        explicit Vertex(const T & data, Vertex<T>* parent = nullptr, int dimensions = 6, std::function<void(T,double*)>TToArray = NULL)
+                : _state(data), _parent(parent)
+                {
+                    _vec.resize(dimensions);
+                    if(_parent)
+                    {
+                        _parent->_children.push_back(this);
+                    }
+                    if(NULL == TToArray)
+                    {
+                        _vec = data.Vector();
+                    }
+                    else
+                    {
+                        TToArray(data,_vec.data());
+                    }
+                };
+        const Vertex<T>* parent() const {return  _parent;};
+
+        int depth() const{
+            int n=0;
+            Vertex<T>* ancestor = _parent;
+            while( ancestor != nullptr)
+            {
+                n++;
+                ancestor = ancestor->_parent;
+            }
+            return n;
+        };
+
+        const T& state() const {return _state;};
+
+        Eigen::VectorXd* coordinates() {return &_vec;};
     private:
-        T _data;
+        Eigen::VectorXd _vec;
+        T _state;
         Vertex* _parent;
-        double _distance_from_parent;
+        std::list<Vertex<T>*> _children;
     };
 
-    template <typename T>
-    class Planner {
-    protected:
-
-        int _iter_max{};
-        double _step_len{},_goal_sample_rate{};
-        T _start,_goal;
-        virtual std::vector<T> extractPath(const Vertex<T> & node_end)=0;
-    public:
-        Planner() =default;
-        virtual ~Planner() =default;
-        virtual std::vector<T> planning() =0;
-        virtual T sample()=0;
-        virtual Vertex<T> get_nearest_neighbor(const T & current_state)=0;
-        bool isGoalReached(const Vertex<T> & node_end){return planner::distance(node_end._data-_goal)<_step_len;};
-    };
 }
 
 
 
-#endif //NURSINGROBOT_PLANNER_H
+#endif //NURSINGROBOT_PLANNER_HPP

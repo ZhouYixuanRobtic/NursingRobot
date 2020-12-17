@@ -84,6 +84,10 @@ namespace state_space{
             R3 temp_twist{s * this->Vector()};
             return SO3(temp_twist);
         };
+        friend SO3 operator*(double s,const SO3& input)
+        {
+            return input*s;
+        }
         SO3 operator()(double theta) const override
         {
             R3 temp_twist = this->Axis()*theta;
@@ -103,8 +107,15 @@ namespace state_space{
             double s = x_distribution(randomEngine);
             double sigma1 = std::sqrt(1-s);
             double sigma2 = std::sqrt(s);
-            double theta1 = 2*M_PI*x_distribution(randomEngine);
-            double theta2 = 2*M_PI*x_distribution(randomEngine);
+            double theta1,theta2;
+            if(bounds_ptr == nullptr)
+            {
+                theta1 = 2*M_PI*x_distribution(randomEngine);
+                theta2 = 2*M_PI*x_distribution(randomEngine);
+            }
+            //TODO: uniformly sampling within the bounds;
+
+
             Eigen::Vector4d random_quaternion{sin(theta1)*sigma1,cos(theta1)*sigma1,sin(theta2)*sigma2,cos(theta2)*sigma2};
             return SO3(random_quaternion);
         };

@@ -51,7 +51,7 @@ add_library("StateSpace" ${lib_SRC})
 add_library(RobotModel src/RobotModel.cpp)
 target_link_libraries(RobotModel StateSpace ${YAML_LIBRARIES})
 
-add_library(RRT src/RRT.cpp)
+add_library(RRT include/RRT.hpp)
 target_link_libraries(RRT StateSpace RobotModel)
 
 add_library(PlanningInterface src/PlanningInterface.cpp)

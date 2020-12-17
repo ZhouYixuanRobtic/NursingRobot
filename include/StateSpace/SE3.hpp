@@ -134,7 +134,10 @@ namespace state_space {
             R6 temp_twist{s * this->Vector()};
             return SE3(temp_twist);
         };
-
+        friend SE3 operator*(double s, const SE3 & input)
+        {
+            return input*s;
+        };
         SE3 operator()(double theta) const override {
             R6 temp_twist = this->Axis() * theta;
             return SE3(temp_twist);
