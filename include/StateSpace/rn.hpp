@@ -12,10 +12,11 @@ namespace state_space{
         int _dimensions_{};
         Eigen::VectorXd _data_;
     public:
-        explicit Rn(int dimensions = 3)
+        explicit Rn(int dimensions=3)
         {
             this->_data_.resize(dimensions);
             this->_data_.setZero();
+            this->_dimensions_ =dimensions;
         };
         explicit Rn(const Eigen::VectorXd &data)
         {
@@ -72,7 +73,7 @@ namespace state_space{
         {
             return Rn(-1*this->Vector());
         };
-        Rn random(std::default_random_engine & randomEngine, const Eigen::Matrix2Xd* bounds_ptr)const override
+        Rn random(std::default_random_engine & randomEngine, const Eigen::MatrixX2d* bounds_ptr)const override
         {
             Eigen::VectorXd result(_dimensions_);
             if(bounds_ptr != nullptr)
@@ -80,11 +81,12 @@ namespace state_space{
                 std::uniform_real_distribution<double> x_distribution(0, 1);
                 for(int i=0; i<this->_dimensions_; ++i)
                 {
-                    result[i] =  bounds_ptr->col(i)[1] + x_distribution(randomEngine) * (bounds_ptr->col(i)[0]-bounds_ptr->col(i)[1]);
+                    result[i] =  bounds_ptr->col(1)[i] + x_distribution(randomEngine) * (bounds_ptr->col(0)[i]-bounds_ptr->col(1)[i]);
                 }
             }
             else
             {
+                //[-1,1]
                 result.setRandom();
             }
             return Rn(result);
@@ -97,7 +99,7 @@ namespace state_space{
         {
             return (*this - to).norm();
         };
-        bool isValid(const Eigen::Matrix2Xd* bounds_ptr) const
+        bool isValid(const Eigen::MatrixX2d* bounds_ptr) const
         {
             return !( ((this->_data_-bounds_ptr->col(0)).array()>0).any()||
                       ((this->_data_-bounds_ptr->col(1)).array()<0).any() );
@@ -109,6 +111,7 @@ namespace state_space{
         };
 
     };
+
 }
 
 

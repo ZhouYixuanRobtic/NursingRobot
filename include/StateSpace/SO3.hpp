@@ -6,7 +6,7 @@
 #define NURSINGROBOT_SO3_H
 
 #include "StateSpace.hpp"
-
+#include <iostream>
 namespace state_space{
 
     /**
@@ -46,7 +46,7 @@ namespace state_space{
         so_3 _calculate_unit_so3() const {return so_3{VecToso3(Axis())};};
     public:
 
-        SO3()
+        explicit SO3(int dimensions = 3)
         {
             _twist_2d_ = R3 ::Zero();
             SO3_MATRIX_=SO_3 ::Identity();
@@ -68,6 +68,7 @@ namespace state_space{
         so_3 Unitso3Matrix() const {return _calculate_unit_so3();};
         so_3 so3Matrix() const {return _calculate_so3();};
         Eigen::Vector4d Quaternion() const {Eigen::Quaterniond rotation{SO3_MATRIX_}; return rotation.coeffs();};
+        Eigen::Vector3d RPY() const{return SO3_MATRIX_.eulerAngles(0,1,2);};
 
         SO3 operator+(const SO3 & input) const override
         {
@@ -98,25 +99,27 @@ namespace state_space{
             R3 twist = -Axis() * Theta();
             return SO3(twist);
         };
-        SO3 random(std::default_random_engine & randomEngine,const Eigen::Matrix2Xd * bounds_ptr) const override
+        SO3 random(std::default_random_engine & randomEngine,const Eigen::MatrixX2d * bounds_ptr) const override
         {
             //Effective Sampling and Distance Metrics for 3D Rigid Body Path Planning [c]
             //James J. Kuffner
             //use the uniformly sampling unit Quaternion
             std::uniform_real_distribution<double> x_distribution(0,1);
+            /*here we use convention of XYZ YPR.
+            double roll,pitch,yaw;
+            yaw = 2*M_PI*x_distribution(randomEngine)-M_PI;
+            pitch = std::acos(1-2*x_distribution(randomEngine))-M_PI_2;
+            roll = 2*M_PI*x_distribution(randomEngine)-M_PI;*/
+            //uniformly sampling using unit quaternions;
+            //Noted:    do not have a bounded method, because of can't have a compact presentation could describe the range of a rotation
             double s = x_distribution(randomEngine);
             double sigma1 = std::sqrt(1-s);
             double sigma2 = std::sqrt(s);
             double theta1,theta2;
-            if(bounds_ptr == nullptr)
-            {
-                theta1 = 2*M_PI*x_distribution(randomEngine);
-                theta2 = 2*M_PI*x_distribution(randomEngine);
-            }
-            //TODO: uniformly sampling within the bounds;
-
-
+            theta1 = 2*M_PI*x_distribution(randomEngine);
+            theta2 = 2*M_PI*x_distribution(randomEngine);
             Eigen::Vector4d random_quaternion{sin(theta1)*sigma1,cos(theta1)*sigma1,sin(theta2)*sigma2,cos(theta2)*sigma2};
+
             return SO3(random_quaternion);
         };
         double distance(const SO3 & to) const override

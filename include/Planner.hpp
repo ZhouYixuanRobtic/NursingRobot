@@ -23,11 +23,12 @@
 namespace planner{
 
     template <typename T>
-    static T randomState(const Eigen::Matrix2Xd * bounds_ptr)
+    static T randomState(const Eigen::MatrixX2d * bounds_ptr, int dimensions = 0)
     {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
-        return T().random(randomEngine,bounds_ptr);
+
+        return dimensions==0 ? T().random(randomEngine,bounds_ptr): T(dimensions).random(randomEngine,bounds_ptr);
     }
 
     /**

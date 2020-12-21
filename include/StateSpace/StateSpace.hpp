@@ -28,6 +28,8 @@ namespace state_space{
     //adjoint matrix 6X6 for Lie bracket
     typedef Eigen::Matrix<double,6,6> adjoint_mat;
 
+    typedef Eigen::Matrix<double,6,6> jacobian_mat;
+
 
     static bool NearZero(const double val)
     {
@@ -52,7 +54,7 @@ namespace state_space{
         virtual T operator()(double theta)  const =0;
 
         virtual T inverse() const =0;
-        virtual T random(std::default_random_engine & randomEngine,const Eigen::Matrix2Xd* bounds_ptr) const =0;
+        virtual T random(std::default_random_engine & randomEngine,const Eigen::MatrixX2d* bounds_ptr) const =0;
         virtual double distance(const T & to) const =0;
 
     protected:

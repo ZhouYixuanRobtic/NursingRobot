@@ -3,6 +3,7 @@
 
 #include "StateSpace.hpp"
 #include "SO3.hpp"
+#include "rn.hpp"
 namespace state_space {
 
     /**
@@ -64,9 +65,10 @@ namespace state_space {
         };
     public:
 
-        SE3() {
-            _twist_3d_ = R6::Zero();
-            SE3_matrix_ = SE_3::Identity();
+        explicit SE3(int dimensions=6)
+        {
+            _twist_3d_.setZero();
+            SE3_matrix_.setIdentity();
         };
 
         SE3(const SE3 &a_SE3) : StateSpace(a_SE3) {
@@ -148,9 +150,11 @@ namespace state_space {
             return SE3(twist);
         };
 
-        SE3 random(std::default_random_engine &randomEngine, const Eigen::Matrix2Xd *bounds_ptr) const override {
-            //TODO:: SE3 random
-            return SE3();
+        SE3 random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override {
+            if (bounds_ptr!= nullptr && bounds_ptr->rows()!=3) throw std::invalid_argument("SE3 random only bound translation");
+
+            return SE3(SO3().random(randomEngine, nullptr),
+                       Rn(3).random(randomEngine,bounds_ptr).Vector());
         };
 
         double distance(const SE3 &to) const override {

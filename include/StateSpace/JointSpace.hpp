@@ -17,9 +17,9 @@ namespace state_space{
             for(int i=0; i < _data_.size(); ++i)
             {
                 auto & val = _data_[i];
-                if(val >= _upper_limit_)
+                if(val > _upper_limit_)
                     val -= 2 * _upper_limit_;
-                else if(val <= _lower_limit_)
+                else if(val < _lower_limit_)
                     val+= 2 * _lower_limit_;
             }
         }
@@ -30,7 +30,7 @@ namespace state_space{
             this->_dimensions_ = other.Vector().size();
             this->_data_ = other.Vector();
         }
-        explicit JointSpace(int dimensions =6)
+        explicit JointSpace(int dimensions=6)
         {
             this->_data_.resize(dimensions);
             this->_data_.setZero();
@@ -53,6 +53,7 @@ namespace state_space{
         ~JointSpace() override =default;
 
         Eigen::VectorXd Vector() const {return _data_;};
+        Eigen::VectorXd& Vector() {return _data_;};
         JointSpace& operator=(const JointSpace& other)
         {
             this->_dimensions_ = other.Vector().size();
@@ -96,7 +97,7 @@ namespace state_space{
         {
           return JointSpace(-1*this->Vector());
         };
-        JointSpace random(std::default_random_engine & randomEngine, const Eigen::Matrix2Xd* bounds_ptr)const override
+        JointSpace random(std::default_random_engine & randomEngine, const Eigen::MatrixX2d* bounds_ptr)const override
         {
             Eigen::VectorXd result(_dimensions_);
             if(bounds_ptr != nullptr)
@@ -104,7 +105,7 @@ namespace state_space{
                 std::uniform_real_distribution<double> x_distribution(0, 1);
                 for(int i=0; i<this->_dimensions_; ++i)
                 {
-                    result[i] =  bounds_ptr->col(i)[1] + x_distribution(randomEngine) * (bounds_ptr->col(i)[0]-bounds_ptr->col(i)[1]);
+                    result[i] =  bounds_ptr->col(1)[i] + x_distribution(randomEngine) * (bounds_ptr->col(0)[i]-bounds_ptr->col(1)[i]);
                 }
             }
             else
@@ -115,6 +116,7 @@ namespace state_space{
                     result[i] = x_distribution(randomEngine);
                 }
             }
+            return JointSpace(result);
         };
         double distance(const JointSpace & to) const override
         {
@@ -136,15 +138,18 @@ namespace state_space{
         {
             return this->_data_.size();
         };
-        bool isValid(const Eigen::Matrix2Xd* bounds_ptr) const
+        bool isValid(const Eigen::MatrixX2d* bounds_ptr) const
         {
-            return !( ((this->_data_-bounds_ptr->col(0)).array()>0).any()||
-                     ((this->_data_-bounds_ptr->col(1)).array()<0).any() );
+            JointSpace upper_bound_{bounds_ptr->col(0)},lower_bound_{bounds_ptr->col(1)};
+            return !( ((*this-upper_bound_).Vector().array()>0).any()||
+                      ((*this-lower_bound_).Vector().array()<0).any() );
+
         };
         bool isValid(const Eigen::VectorXd & upper_bound,const Eigen::VectorXd & lower_bound) const
         {
-            return !( ((this->_data_-upper_bound).array()>0).any()||
-                      ((this->_data_-lower_bound).array()<0).any() );
+            JointSpace upper_bound_{upper_bound},lower_bound_{lower_bound};
+            return !( ((*this-upper_bound_).Vector().array()>0).any()||
+                      ((*this-lower_bound_).Vector().array()<0).any() );
         };
 
 
