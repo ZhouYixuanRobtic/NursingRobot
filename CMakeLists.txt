@@ -40,9 +40,11 @@ link_directories(
 )
 
 set(lib_SRC
-        src/StateSpace/SO3.cpp include/StateSpace/SO3.hpp
-        src/StateSpace/SE3.cpp include/StateSpace/SE3.hpp
-        include/StateSpace/JointSpace.hpp include/StateSpace/rn.hpp)
+        include/StateSpace/SO3.hpp
+        include/StateSpace/SE3.hpp
+        include/StateSpace/JointSpace.hpp
+        include/StateSpace/rn.hpp
+        src/StateSpace/state_space.cpp)
 
 # add_library("RRT" STATIC ${lib_SRC})
 add_library("StateSpace" ${lib_SRC})
@@ -59,3 +61,6 @@ target_link_libraries(PlanningInterface StateSpace RobotModel)
 
 add_executable(NursingRobot src/main.cpp)
 target_link_libraries(NursingRobot StateSpace RobotModel ${YAML_LIBRARIES})
+
+add_executable(6dTest test/6d_rrt_test.cpp)
+target_link_libraries(6dTest StateSpace RRT)

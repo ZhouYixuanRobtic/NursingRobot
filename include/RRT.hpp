@@ -6,17 +6,16 @@
 #define NURSINGROBOT_RRT_HPP
 #include "Planner.hpp"
 #include <random>
+#include "tr1/memory"
 namespace planner{
     template <typename T>
     class RRT {
     protected:
-        Vertex<T>* _head;
-        Vertex<T>* _tail;
-
         std::deque<Vertex<T>> _nodes;
 
         std::unordered_map<T, Vertex<T>*, std::function<size_t(T)>> _node_map;
 
+        Vertex<T>* _tail;
         T _start,_goal;
 
         bool _forward;
@@ -31,90 +30,100 @@ namespace planner{
 
         double _goal_max_dist{};
 
-        double _waypoint_bias{};
+        double _d_min{};
 
         bool _is_ASC_enabled{};
 
-        flann::Index<flann::L2_Simple<double>> _kd_tree;
+        const Eigen::MatrixX2d* _bounds_ptr;
+
+        std::tr1::shared_ptr<flann::Index<flann::L2_Simple<double>>>_kd_tree{};
 
         std::function<T(double*)> _arrayToT;
 
         std::function<void(T, double*)> TToArray_;
 
 
-        virtual Vertex<T> _nearest(const T & current_state,double* distance_out)
+        virtual Vertex<T>* _nearest(const T & current_state,double* distance_out)
         {
-            Vertex<T>* best = nullptr;
             //K-NN search
+            std::vector<double> data(_dimensions);
             flann::Matrix<double> query;
-            if(NULL == this->TToArray_)
+            if(NULL == TToArray_)
             {
-                query = flann::Matrix<double>((double*)&current_state, 1,
-                                              sizeof(current_state) / sizeof(0.0));
+                memcpy(data.data(),current_state.Vector().data(),_dimensions*sizeof(current_state.Vector()[0]));
+                query = flann::Matrix<double>(data.data(), 1,_dimensions);
             }
             else
             {
-                Eigen::VectorXd data(this->_dimensions);
-                this->TToArray_(current_state, data.data());
-                query = flann::Matrix<double>(data.data(), 1,
-                                              sizeof(current_state) / sizeof(0.0));
+                TToArray_(current_state, data.data());
+                query = flann::Matrix<double>(data.data(), 1,_dimensions);
             }
-            std::vector<int> i(query.rows);
-            flann::Matrix<int> indices(i.data(), query.rows, 1);
-            std::vector<double> d(query.rows);
-            flann::Matrix<double> dists(d.data(), query.rows, 1);
-            int n =
-                    this->_kd_tree.knnSearch(query, indices, dists, 1, flann::SearchParams());
-
+            std::vector<std::vector<size_t>> indices(1);
+            std::vector<std::vector<double>> dists(1);
+            _kd_tree->knnSearch(query, indices, dists, 1, flann::SearchParams());
             if (distance_out)
-                *distance_out = distance(current_state, best->state());
+                *distance_out = std::sqrt(dists[0][0]);
             T point;
-            if (NULL == this->_arrayToT) {
-                point = (T)this->_kd_tree.getPoint(indices[0][0]);
+            if (NULL == _arrayToT) {
+                point = T(_kd_tree->getPoint(indices[0][0]), _dimensions);
             } else {
-                point = _arrayToT(this->_kd_tree.getPoint(indices[0][0]));
+                point = _arrayToT(_kd_tree->getPoint(indices[0][0]));
             }
-            return this->_node_map[point];
+            return _node_map[point];
         }
-        virtual Vertex<T> _steer(const T & rand_state,Vertex<T>* source)
+        virtual Vertex<T>* _steer(const T & rand_state,Vertex<T>* source)
         {
+            double distance=_step_len;
             if(!source)
             {
-                source = _nearest(rand_state, nullptr);
+                source = _nearest(rand_state, &distance);
                 if(!source) return nullptr;
             }
-            //TODO: adaptive step size control
-            T intermediate_state = interpolate(source->state(),rand_state,this->StepLen());
-            T from = this->_forward ? source->state() : intermediate_state,
-                    to = this->_forward ? intermediate_state: source->state();
+            double steer_length = _step_len<1? std::min(distance/_d_min, this->StepLen())*_d_min: std::min(distance, this->StepLen());
+            T intermediate_state = planner::extend(source->state(),rand_state,steer_length);
+            T from = _forward ? source->state() : intermediate_state,
+                    to = _forward ? intermediate_state: source->state();
             if(!_collision_check(from,to)) return nullptr;
 
-            this->_nodes.emplace_back(intermediate_state,source,this->_dimensions,this->_TtoArray);
-            this->_kd_tree.addPoints(flann::Matrix<double>(this->_nodes.back().coordinates()->data(), 1, this->_dimensions));
-            this->_node_map.insert(std::pair<T,Vertex<T>*>(intermediate_state,&this->_nodes.back()));
-            return &this->_nodes.back();
+            _nodes.template emplace_back(intermediate_state,source,_dimensions,TToArray_);
+            _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
+            _node_map.insert(std::pair<T,Vertex<T>*>(intermediate_state,&_nodes.back()));
+            return &_nodes.back();
         }
         bool _isGoalReached(Vertex<T>* node_end)
         {
-            return planner::distance(node_end->state() - _goal) < _goal_max_dist;
+            if(_step_len >1 && _goal_max_dist<1)
+            {
+                throw std::invalid_argument(
+                        "take a absolute step len, while having relative goal region radius"
+                        "Please call setGoalMaxDist()/setStepLen() to match them "
+                        );
+            }
+            else if(_step_len<1 && _goal_max_dist>1)
+            {
+                throw std::invalid_argument(
+                        "take a relative step len, while having absolute goal region radius."
+                        "Please call setGoalMaxDist()/setStepLen() to match them"
+                );
+            }
+            return planner::distance(node_end->state(), _goal)<_goal_max_dist;
         };
 
         virtual T _sample()
         {
-            //TODO: sample with in bounds;
-            return randomState<T>(nullptr);
+            return randomState<T>(_bounds_ptr,_dimensions);
         }
 
-        virtual bool _collision_check(){return true;};
+        virtual bool _collision_check(const T& from, const T& to){return true;};
 
         virtual void _extract_path(std::vector<T> &vectorOut, bool reverse)
         {
-            const Vertex<T>* vertex = LastVertex();
+            const Vertex<T>* vertex = _tail;
             if(reverse)
             {
                 while(vertex)
                 {
-                    vectorOut.emplace_back(vertex->state());
+                    vectorOut.template emplace_back(vertex->state());
                     vertex = vertex->parent();
                 }
             }
@@ -123,37 +132,37 @@ namespace planner{
                 std::vector<const Vertex<T>* > vertexes;
                 while(vertex)
                 {
-                    _nodes.push_back(vertex);
+                    vertexes.template emplace_back(vertex);
                     vertex = vertex->parent();
                 }
                 for (auto itr = vertexes.rbegin(); itr != vertexes.rend(); itr++)
                 {
-                    vectorOut.emplace_back(vertex->state());
+                    vectorOut.template emplace_back((*itr)->state());
                 }
             }
         }
 
 
-
     public:
         RRT(const RRT<T> &) = delete;
         RRT& operator=(const RRT<T> &) = delete;
-        RRT(std::function<size_t(T)> hashT, int dimensions, bool forward = true,
+        RRT(const T& start,const T& goal,std::function<size_t(T)> hashT, int dimensions, bool forward = true,
             std::function<T(double*)> arrayToT = NULL,
             std::function<void(T, double*)> TToArray = NULL)
-            :_kd_tree(flann::KDTreeSingleIndexParams()),
-            _dimensions(dimensions),
-            _node_map(20, hashT)
+            :_start(start),_goal(goal),_dimensions(dimensions),_node_map(20, hashT)
         {
+            _d_min =planner::distance(start,goal);
+            _bounds_ptr = nullptr;
+            _kd_tree.reset(new flann::Index<flann::L2_Simple<double>>(flann::KDTreeSingleIndexParams()));
             _forward = forward;
             _arrayToT = arrayToT;
-            TToArray = TToArray;
+            TToArray_ = TToArray;
 
             setStepLen(0.1);
             setMaxStepLen(5);
             setMaxIterations(1000);
-            setGoalBias(0);
-            setGoalMaxDist(0.1);
+            setGoalBias(0.1);
+            setGoalMaxDist(0.15);
         };
         virtual ~RRT()=default;
 
@@ -199,32 +208,28 @@ namespace planner{
         const T& GoalState() const { return _goal; }
         void setGoalState(const T& goalState) { _goal = goalState; }
 
-        const T& startState() const {
+        Eigen::MatrixX2d SampleBounds() const { return *_bounds_ptr; }
+        void setSampleBounds(const Eigen::MatrixX2d* bounds_ptr) { _bounds_ptr= bounds_ptr; }
+
+        const T& startState() const
+        {
             if (_nodes.empty())
                 throw std::logic_error("No start state specified for RRT");
             else
                 return RootVertex()->state();
         }
-        void setStartState(const T& startState) {
+        void setStartState(const T& startState)
+        {
             reset(true);
-
-            //  create root node from provided start state
-            _nodes.emplace_back(startState, nullptr, _dimensions, TToArray_);
+            // create root node from provided start state
+            _nodes.template emplace_back(startState, nullptr, _dimensions, TToArray_);
             _node_map.insert(std::pair<T, Vertex<T>*>(startState, &_nodes.back()));
-            if (TToArray_) {
-                std::vector<double> data(_dimensions);
-                _TToArray(RootVertex()->state(), data.data());
-                _kd_tree.buildIndex(
-                        flann::Matrix<double>(data.data(), 1, _dimensions));
-            } else {
-                _kd_tree.buildIndex(flann::Matrix<double>(
-                        (double*)&(RootVertex()->state()), 1, _dimensions));
-            }
+            _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
         }
 
         void reset(bool eraseRoot = false)
         {
-            _kd_tree = flann::Index<flann::L2_Simple<double>>(flann::KDTreeSingleIndexParams());
+            _kd_tree.reset(new flann::Index<flann::L2_Simple<double>>(flann::KDTreeSingleIndexParams())) ;
             if(eraseRoot)
             {
                 _nodes.clear();
@@ -232,44 +237,43 @@ namespace planner{
             }
             else if(_nodes.size() > 1)
             {
+                //clear all node but left root
                 T root = RootVertex()->state();
                 _node_map.clear();
                 _nodes.clear();
                 _nodes.template emplace_back(root, nullptr, _dimensions, TToArray_);
-                _node_map.template insert(std::pair<T, Vertex<T>*>(root,&_nodes.back()));
-                if(TToArray_)
-                {
-                    Eigen::VectorXd data(_dimensions);
-                    TToArray_(root,data.data());
-                    _kd_tree.buildIndex(flann::Matrix<double>(data.data(), 1, _dimensions));
-                }
-                else
-                {
-                    _kd_tree.buildIndex(flann::Matrix<double>((double*)&(RootVertex()->state()), 1, _dimensions));
-                }
+                _node_map.insert(std::pair<T, Vertex<T>*>(root,&_nodes.back()));
+                _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
             }
         }
 
         virtual bool planning()
         {
+            setStartState(_start);
             for(int i=0; i<MaxIterations(); ++i)
             {
                 Vertex<T>* new_vertex;
-                double r = drand48();
+                double r = rand() /
+                           (double)RAND_MAX;
                 if(r < GoalBias())
-                    new_vertex = _steer(GoalState());
+                    new_vertex = _steer(GoalState(), nullptr);
                 else
-                    new_vertex = _steer(_sample());
-                if (new_vertex && _isGoalReached(new_vertex->state()))
+                    new_vertex = _steer(_sample(), nullptr);
+                if (new_vertex && _isGoalReached(new_vertex))
+                {
+                    _tail = new_vertex;
                     return true;
+                }
+
             }
             return false;
         }
 
-        std::vector<T> GetPath(bool reverse)
+        std::vector<T> GetPath(bool reverse=false)
         {
             std::vector<T> path;
             _extract_path(path,reverse);
+            path.template emplace_back(_goal);
             return path;
         }
 

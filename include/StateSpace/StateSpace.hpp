@@ -52,13 +52,15 @@ namespace state_space{
         virtual T operator-(const T & input) const =0;
         virtual T operator*(double s)  const =0;
         virtual T operator()(double theta)  const =0;
+        virtual bool operator==(const T& other) const =0;
 
         virtual T inverse() const =0;
         virtual T random(std::default_random_engine & randomEngine,const Eigen::MatrixX2d* bounds_ptr) const =0;
         virtual double distance(const T & to) const =0;
+        virtual double norm()const=0;
+        virtual double* data()=0;
 
-    protected:
-        int _dimensions=0;
+        virtual int Dimensions() const =0;
     };
 
 

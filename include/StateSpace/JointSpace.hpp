@@ -89,7 +89,11 @@ namespace state_space{
             this->_data_+=input;
             return *this;
         };
-        void* data()
+        bool operator==(const JointSpace& other)const override
+        {
+            return _data_ == other._data_;
+        }
+        double * data() override
         {
             return this->_data_.data();
         };
@@ -126,11 +130,11 @@ namespace state_space{
         {
             return this->distance(JointSpace(input));
         };
-        double norm() const
+        double norm() const override
         {
             return this->_data_.norm();
         };
-        int Dimensions() const
+        int Dimensions() const override
         {
             return _dimensions_;
         };

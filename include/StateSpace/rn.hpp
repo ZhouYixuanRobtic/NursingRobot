@@ -23,7 +23,7 @@ namespace state_space{
             this->_data_ = data;
             this->_dimensions_ = data.size();
         };
-        explicit Rn(const double * data_ptr, int dimensions)
+        explicit Rn(const void * data_ptr, int dimensions)
         {
             this->_data_.resize(dimensions);
             memcpy(this->_data_.data(),data_ptr,dimensions * sizeof(double));
@@ -32,7 +32,7 @@ namespace state_space{
         ~Rn() override = default;
 
         Eigen::VectorXd Vector() const{return _data_;};
-
+        Eigen::VectorXd& Vector(){return _data_;};
         Rn operator+(const Rn& input)const override
         {
             return Rn(this->Vector()+input.Vector());
@@ -65,7 +65,15 @@ namespace state_space{
         {
             return this->_data_[index];
         };
-        void* data()
+        bool operator==(const Rn& other) const
+        {
+            return _data_==other._data_;
+        }
+        int Dimensions() const override
+        {
+            return _dimensions_;
+        };
+        double * data() override
         {
             return this->_data_.data();
         };
@@ -91,7 +99,7 @@ namespace state_space{
             }
             return Rn(result);
         };
-        double norm() const
+        double norm() const override
         {
             return (this->_data_.norm());
         };

@@ -20,14 +20,33 @@
 #include <functional>
 #include <cstdlib>
 #include <list>
+#include "boost/functional/hash.hpp"
 namespace planner{
+    /**
+     *
+     * @tparam T
+     * @param state
+     * @return hash function for state
+     */
+    template <typename T>
+    static size_t hash(T state) {
+        size_t seed = 0;
+        for(int i=0; i<state.Vector().size();++i)
+        {
+            boost::hash_combine(seed, state.Vector()[i]);
+        }
+        return seed;
+    }
 
     template <typename T>
     static T randomState(const Eigen::MatrixX2d * bounds_ptr, int dimensions = 0)
     {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
-
+        if(bounds_ptr!= nullptr && bounds_ptr->rows()!=dimensions)
+        {
+            throw std::invalid_argument("dimensions and bounds are not equal!");
+        }
         return dimensions==0 ? T().random(randomEngine,bounds_ptr): T(dimensions).random(randomEngine,bounds_ptr);
     }
 
@@ -42,7 +61,25 @@ namespace planner{
     static T interpolate(const T& source, const T& target,
                          double lambda)
     {
+        if(lambda >1||lambda<0)
+        {
+            throw std::invalid_argument
+            ("only interpolate state with [source, target], please use 'extend' function \n");
+        }
         return source+(target-source)*lambda;
+    }
+
+    /**
+     * Gets a state in the direction of @source to @target, with a distance from @source
+     * @param extend_length the distance of return state from @source
+     * @return A state
+     */
+    template<typename T>
+    static T extend(const T& source, const T& target, double extend_length)
+    {
+        T extend_direction = target-source;
+        extend_direction = extend_direction*(1/extend_direction.norm());
+        return source+(extend_direction*extend_length);
     }
 
     /**
@@ -112,14 +149,14 @@ namespace planner{
                     }
                     if(NULL == TToArray)
                     {
-                        _vec = data.Vector();
+                        memcpy(_vec.data(),data.Vector().data(),dimensions*sizeof(double));
                     }
                     else
                     {
                         TToArray(data,_vec.data());
                     }
                 };
-        const Vertex<T>* parent() const {return  _parent;};
+        const Vertex<T>* parent()const {return  _parent;};
 
         int depth() const{
             int n=0;
@@ -134,9 +171,9 @@ namespace planner{
 
         const T& state() const {return _state;};
 
-        Eigen::VectorXd* coordinates() {return &_vec;};
+        double* data()const {return const_cast<double *>(_vec.data());};
     private:
-        Eigen::VectorXd _vec;
+        std::vector<double> _vec;
         T _state;
         Vertex* _parent;
         std::list<Vertex<T>*> _children;

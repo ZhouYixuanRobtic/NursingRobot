@@ -8,17 +8,12 @@
 #include "Planner.hpp"
 int main()
 {
-    Eigen::MatrixX2d bounds(3,2);
-    bounds<<0.6,0.4,
-            0.6,0.4,
-            0.6,0.4;
-    double b=0.1;
-    int iter=-1;
-    while(++iter<100)
-    {
-        state_space::SE3 a=planner::randomState<state_space::SE3>(&bounds);
-        std::cout<<a.SE3Matrix()<<std::endl;
-    }
-
+    Eigen::MatrixX2d bounds(2,2);
+    bounds<<680,0,
+            480,0;
+    state_space::Rn start_state = planner::randomState<state_space::Rn>(&bounds,2);
+    state_space::Rn goal_state = planner::randomState<state_space::Rn>(&bounds,2);
+    std::cout<<goal_state.Vector().transpose()<<std::endl;
+    std::cout<<start_state.Vector().transpose()<<std::endl;
 
 }
