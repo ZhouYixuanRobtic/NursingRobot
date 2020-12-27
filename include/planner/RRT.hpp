@@ -4,9 +4,8 @@
 
 #ifndef NURSINGROBOT_RRT_HPP
 #define NURSINGROBOT_RRT_HPP
-#include "Planner.hpp"
+#include "planner/Planner.hpp"
 #include <random>
-#include "tr1/memory"
 namespace planner{
     template <typename T>
     class RRT {
@@ -36,7 +35,7 @@ namespace planner{
 
         const Eigen::MatrixX2d* _bounds_ptr;
 
-        std::tr1::shared_ptr<flann::Index<flann::L2_Simple<double>>>_kd_tree{};
+        std::shared_ptr<flann::Index<flann::L2_Simple<double>>>_kd_tree{};
 
         std::function<T(double*)> _arrayToT;
 
@@ -153,7 +152,7 @@ namespace planner{
         {
             _d_min =planner::distance(start,goal);
             _bounds_ptr = nullptr;
-            _kd_tree.reset(new flann::Index<flann::L2_Simple<double>>(flann::KDTreeSingleIndexParams()));
+            _kd_tree =std::make_shared<flann::Index<flann::L2_Simple<double>>>(flann::KDTreeSingleIndexParams());
             _forward = forward;
             _arrayToT = arrayToT;
             TToArray_ = TToArray;

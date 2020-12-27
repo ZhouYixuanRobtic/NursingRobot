@@ -5,6 +5,7 @@
 #ifndef NURSINGROBOT_JOINTSPACE_HPP
 #define NURSINGROBOT_JOINTSPACE_HPP
 
+#include <iostream>
 #include "StateSpace/StateSpace.hpp"
 namespace state_space{
 
@@ -151,9 +152,8 @@ namespace state_space{
         };
         bool isValid(const Eigen::VectorXd & upper_bound,const Eigen::VectorXd & lower_bound) const
         {
-            JointSpace upper_bound_{upper_bound},lower_bound_{lower_bound};
-            return !( ((*this-upper_bound_).Vector().array()>0).any()||
-                      ((*this-lower_bound_).Vector().array()<0).any() );
+            return !( ((_data_-upper_bound).array()>0).any()||
+                      ((_data_-lower_bound).array()<0).any() );
         };
 
 

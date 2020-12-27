@@ -1,11 +1,11 @@
 #include <iostream>
 #include "StateSpace/SE3.hpp"
 #include "StateSpace/SO3.hpp"
-#include "RobotModel.h"
+#include "Kinematics/Kinematics.h"
 #include <ctime>
-#include "RobotModel.cpp"
 #include "StateSpace/StateSpace.hpp"
-#include "Planner.hpp"
+#include "planner/Planner.hpp"
+
 int main()
 {
     Eigen::MatrixX2d bounds(2,2);
@@ -15,5 +15,4 @@ int main()
     state_space::Rn goal_state = planner::randomState<state_space::Rn>(&bounds,2);
     std::cout<<goal_state.Vector().transpose()<<std::endl;
     std::cout<<start_state.Vector().transpose()<<std::endl;
-
 }
