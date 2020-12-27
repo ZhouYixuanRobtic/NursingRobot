@@ -92,7 +92,7 @@ Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace & joint_a
     Eigen::MatrixXd jacobian_matrix(6,6);
     state_space::SE_3  tmp_matrix = state_space::SE_3::Identity();
     jacobian_matrix.col(joint_angles.size()-1) = all_screw_axes_[joint_angles.size()-1].Axis();
-    for (int i = joint_angles.size() - 2; i >= 0; i--)
+    for (size_t i = joint_angles.size() - 2; i >= 0; i--)
     {
         tmp_matrix = tmp_matrix * all_screw_axes_[i+1](-joint_angles[i+1]).SE3Matrix();
         jacobian_matrix.col(i) = state_space::GetAdjoint(tmp_matrix) * all_screw_axes_[i].Axis();

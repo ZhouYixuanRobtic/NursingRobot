@@ -118,7 +118,6 @@ namespace kinematics{
                     //if any angle is outside the bound range do not accept this solution
                     state_space::JointSpace check_vector{};
                     memcpy(check_vector.data(),solutions[num_solutions],6*sizeof(double));
-                    bool c=check_vector.isValid(upper_bound,lower_bound);
                     if(check_vector.isValid(upper_bound,lower_bound))
                         num_solutions++;
 
@@ -129,7 +128,6 @@ namespace kinematics{
         if(num_solutions != 0)
         {
             joint_solutions.resize(6,num_solutions);
-            int index = 0;
             for(int i=0;i<num_solutions;++i)
             {
                 memcpy(joint_solutions.col(i).data(),solutions[i],6*sizeof(double));

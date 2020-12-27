@@ -5,7 +5,7 @@
 #include "Kinematics/Kinematics.h"
 #include "Kinematics/custom_kinematics.hpp"
 #include "planner/Planner.hpp"
-int main(int argc, char** argv)
+int main()
 {
     kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
 

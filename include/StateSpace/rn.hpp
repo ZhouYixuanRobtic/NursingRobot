@@ -37,10 +37,6 @@ namespace state_space{
         {
             return Rn(this->Vector()+input.Vector());
         };
-        friend Rn operator+(double a, const Rn&input)
-        {
-            return  Rn(input);
-        }
         Rn operator-(const Rn& input)const override
         {
             return Rn(this->Vector()-input.Vector());
@@ -61,11 +57,11 @@ namespace state_space{
         {
             return this->_data_[index];
         };
-        double operator[](const long index)const
+        double operator[](const size_t index)const
         {
             return this->_data_[index];
         };
-        bool operator==(const Rn& other) const
+        bool operator==(const Rn& other) const override
         {
             return _data_==other._data_;
         }

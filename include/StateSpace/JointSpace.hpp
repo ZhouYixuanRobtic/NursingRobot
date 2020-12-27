@@ -77,7 +77,7 @@ namespace state_space{
         {
             return JointSpace(this->Vector().normalized()*theta);
         };
-        double& operator[](const long index)
+        double& operator[](const size_t index)
         {
             return this->_data_[index];
         };
@@ -139,7 +139,7 @@ namespace state_space{
         {
             return _dimensions_;
         };
-        long size() const
+        size_t size() const
         {
             return this->_data_.size();
         };

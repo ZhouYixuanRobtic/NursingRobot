@@ -154,7 +154,7 @@ namespace kinematics{
         };
 
         state_space::JointSpace nearestIkSolution(const Eigen::Affine3d & desired_pose,
-                                                  const state_space::JointSpace& reference, bool isConescutive =false);
+                                                  const state_space::JointSpace& reference, bool isConsecutive =false);
 
         state_space::JointSpace directedNearestIkSolution(const Eigen::Affine3d & desired_pose,const state_space::JointSpace& reference, const state_space::JointSpace & tangent_reference);
         /*
