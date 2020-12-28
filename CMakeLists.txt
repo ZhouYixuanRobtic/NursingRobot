@@ -53,8 +53,7 @@ set(lib_SRC
         include/StateSpace/rn.hpp
         src/StateSpace/state_space.cpp)
 
-# add_library("RRT" STATIC ${lib_SRC})
-add_library("StateSpace" ${lib_SRC})
+add_library("StateSpace" STATIC  ${lib_SRC})
 
 
 add_library(Kinematics src/Kinematics/Kinematics.cpp include/Kinematics/custom_kinematics.hpp)
@@ -66,6 +65,11 @@ target_link_libraries(RRT StateSpace Kinematics)
 add_library(PlanningInterface src/planner/PlanningInterface.cpp)
 target_link_libraries(PlanningInterface StateSpace Kinematics)
 
+add_library(RobotModel src/RobotModel/RobotModel.cpp)
+target_link_libraries(RobotModel Kinematics StateSpace ${YAML_LIBRARIES})
+
+
+#executale
 add_executable(NursingRobot src/main.cpp)
 target_link_libraries(NursingRobot StateSpace Kinematics ${YAML_LIBRARIES})
 
@@ -74,3 +78,6 @@ target_link_libraries(6dTest StateSpace RRT)
 
 add_executable(kTest test/kinematics_test.cpp)
 target_link_libraries(kTest StateSpace Kinematics)
+
+add_executable(RTest test/robot_model_test.cpp)
+target_link_libraries(RTest StateSpace Kinematics RobotModel)

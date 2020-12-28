@@ -16,3 +16,22 @@ aubo_i5:
     S4: [0,1,0,-0.784,0,0]
     S5: [0,0,1,0.1215,0,0]
     S6: [0,1,0,-0.8865,0,0]
+
+
+  #joint configuration for computing every link's transform
+  joint_configuration:
+    L1: [0.000,0.000,0.000,0.000,0.000,0.000,1.000]
+    L2: [0.000, 0.1215, 0.000,0.500, 0.500, 0.500, -0.500]
+    L3: [0.408, 0.000, 0.000,1.000, -0.000, 0.000, 0.000]
+    L4: [0.376, 0.000, 0.000,0.70710678, 0.70710678,-0.000,-0.000]
+    L5: [0.000, 0.1025, 0.000,-0.70710678, -0.000, -0.000, 0.70710678]
+    L6: [0.000, -0.094, 0.000,0.70710678, 0.000, 0.000, 0.70710678]
+
+  link_paths:
+    L0: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/base_link.STL"
+    L1: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/shoulder_Link.STL"
+    L2: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/upperArm_Link.STL"
+    L3: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/foreArm_Link.STL"
+    L4: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/wrist1_Link.STL"
+    L5: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/wrist2_Link.STL"
+    L6: "/home/xcy/WorkSpace/src/aubo_robot_realsense/aubo_description/meshes/aubo_i5/collision/wrist3_Link.STL"

@@ -33,15 +33,15 @@ int main()
             nearest_counter++;
 
 
-        if(planner::distance(state_space::SE3(aubo_i5_kinematics.fk(test_joint).matrix()),
-                             state_space::SE3(aubo_i5_kinematics.fk(result).matrix()))
+        if(planner::distance(aubo_i5_kinematics.fk(test_joint),
+                             aubo_i5_kinematics.fk(result))
            <zero_thresh)
             ik_counter++;
 
 
         Eigen::MatrixXd joint_solutions;
         start = clock();
-        bool all_valid_bool = aubo_i5_kinematics.allValidIkSolutions(joint_solutions,desired_pose.matrix(), &refer_joint);
+        bool all_valid_bool = aubo_i5_kinematics.allValidIkSolutions(joint_solutions,desired_pose.SE3Matrix(), &refer_joint);
         end = clock();
         all_time += double(end - start)/CLOCKS_PER_SEC;
         if(all_valid_bool)

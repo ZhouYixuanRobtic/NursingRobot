@@ -274,6 +274,13 @@ namespace state_space {
                 return twist / theta;
         }
 
+        static SE3 UnitZ()
+        {
+            state_space::R6 temp_twist;
+            temp_twist<<0,0,1,0,0,0;
+            return SE3(temp_twist);
+        };
+
     };
 }
 

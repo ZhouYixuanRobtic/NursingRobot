@@ -70,6 +70,7 @@ namespace planner{
             }
             return _node_map[point];
         }
+
         virtual Vertex<T>* _steer(const T & rand_state,Vertex<T>* source)
         {
             double distance=_step_len;
@@ -89,6 +90,7 @@ namespace planner{
             _node_map.insert(std::pair<T,Vertex<T>*>(intermediate_state,&_nodes.back()));
             return &_nodes.back();
         }
+
         bool _isGoalReached(Vertex<T>* node_end)
         {
             if(_step_len >1 && _goal_max_dist<1)

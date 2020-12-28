@@ -195,13 +195,13 @@ IK_SINGULAR_CODE Kinematics::analyticalIkSolutions(Eigen::MatrixXd &joint_soluti
     return joint_solutions.cols()!=0;
 
 }
-state_space::JointSpace Kinematics::nearestIkSolution(const Eigen::Affine3d &desired_pose, const state_space::JointSpace& reference, bool isConsecutive)
+state_space::JointSpace Kinematics::nearestIkSolution(const state_space::SE_3 &desired_pose, const state_space::JointSpace& reference, bool isConsecutive)
 {
     //return the nearest ik solution
     state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
     const state_space::JointSpace* reference_ptr = isConsecutive? &solution : nullptr;
-    if(allValidIkSolutions(joint_solutions, desired_pose.matrix(), reference_ptr))
+    if(allValidIkSolutions(joint_solutions, desired_pose, reference_ptr))
     {
         std::vector<double> norm_box;
         for (int i = 0; i < joint_solutions.cols(); ++i)
@@ -212,11 +212,12 @@ state_space::JointSpace Kinematics::nearestIkSolution(const Eigen::Affine3d &des
     }
     return solution;
 }
-state_space::JointSpace Kinematics::directedNearestIkSolution(const Eigen::Affine3d &desired_pose, const state_space::JointSpace &reference, const state_space::JointSpace &tangent_reference)
+
+state_space::JointSpace Kinematics::directedNearestIkSolution(const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference, const state_space::JointSpace &tangent_reference)
 {
     state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
-    IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose.matrix(), nullptr);
+    IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, nullptr);
     if(joint_solutions.cols() == 0 || ret_code == WRIST_SINGULAR)
     {
         if(nIk(desired_pose,solution,1e-8,1e-8))

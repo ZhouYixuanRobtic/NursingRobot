@@ -79,11 +79,17 @@ namespace kinematics{
         /**@brief load a yaml file describing basic config of a specific robot*/
         void _loadModel(const std::string & yaml_name);
 
-        /**@brief converts pose with respect to world frame into pose with respect to the first joint coordninate frame*/
+        /**@brief converts pose with respect to world frame into pose with respect to the first joint coordinate frame*/
         state_space::SE_3 _get_pose_in_first(const state_space::SE_3& pose_in_world)
         {
             return (mount_configuration_.SE3Matrix().inverse())*pose_in_world*(ee_configuration_.SE3Matrix().inverse());
         }
+        /**@brief converts pose with respect to first coordinate frame into pose with respect to the world frame*/
+        state_space::SE_3 _get_pose_in_world(const state_space::SE_3& pose_in_first)
+        {
+            return (mount_configuration_.SE3Matrix())*pose_in_first*(ee_configuration_.SE3Matrix());
+        }
+
 
     public:
 
@@ -130,12 +136,11 @@ namespace kinematics{
         Eigen::MatrixXd jacobianBody(const state_space::JointSpace &joint_angles);
 
         /**@brief computes forward kinematics using the given joint angles*/
-        Eigen::Affine3d fk(const state_space::JointSpace  &joint_angles)
+        state_space::SE3 fk(const state_space::JointSpace &joint_angles)
         {
-            return IN_BODY_ ?   Eigen::Affine3d{mount_configuration_.SE3Matrix() * _fkInBody(joint_angles) * ee_configuration_.SE3Matrix()} :
-                                Eigen::Affine3d{mount_configuration_.SE3Matrix() * _fkInSpace(joint_angles) * ee_configuration_.SE3Matrix()};
-        };
-
+            return IN_BODY_ ?   state_space::SE3{_get_pose_in_world(_fkInBody(joint_angles))} :
+                                state_space::SE3{_get_pose_in_world(_fkInSpace(joint_angles))};
+        }
         /**@brief computes inverse kinematics using numerical method
          * @param joint_angles are references for numerical method
          * @param desired_pose is a SE_3 value
@@ -153,10 +158,29 @@ namespace kinematics{
             return nIk(desired_pose.matrix(),joint_angles,eomg,ev);
         };
 
-        state_space::JointSpace nearestIkSolution(const Eigen::Affine3d & desired_pose,
+        /**@brief an overload version of nIK(SE_3)*/
+        bool nIk(const state_space::SE3& desired_pose,state_space::JointSpace& joint_angles, double eomg=1e-7, double ev=5e-7)
+        {
+            return nIk(desired_pose.SE3Matrix(),joint_angles,eomg,ev);
+        };
+
+        state_space::JointSpace nearestIkSolution(const state_space::SE_3 & desired_pose,
                                                   const state_space::JointSpace& reference, bool isConsecutive =false);
 
-        state_space::JointSpace directedNearestIkSolution(const Eigen::Affine3d & desired_pose,const state_space::JointSpace& reference, const state_space::JointSpace & tangent_reference);
+        state_space::JointSpace nearestIkSolution(const Eigen::Affine3d & desired_pose,
+                                                  const state_space::JointSpace& reference, bool isConsecutive =false)
+        {
+            return nearestIkSolution(desired_pose.matrix(),reference,isConsecutive);
+        };
+
+        state_space::JointSpace nearestIkSolution(const state_space::SE3& desired_pose,
+                                                  const state_space::JointSpace& reference, bool isConsecutive =false)
+        {
+            return nearestIkSolution(desired_pose.SE3Matrix(),reference,isConsecutive);
+        };
+
+        state_space::JointSpace directedNearestIkSolution(const state_space::SE_3 & desired_pose,const state_space::JointSpace& reference, const state_space::JointSpace & tangent_reference);
+
         /*
         virtual state_space::R6 changeReference() =0;
         virtual Eigen::VectorXd inverseDynamics() = 0;
