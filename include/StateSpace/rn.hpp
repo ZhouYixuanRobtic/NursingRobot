@@ -7,11 +7,16 @@
 
 #include "StateSpace/StateSpace.hpp"
 namespace state_space{
+
+    class Rn;
+
     class Rn : public virtual StateSpace<Rn>{
     protected:
         int _dimensions_{};
         Eigen::VectorXd _data_;
+        enum { NeedsToAlign = (sizeof(_data_)%16)==0 };
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
         explicit Rn(int dimensions=3)
         {
             this->_data_.resize(dimensions);

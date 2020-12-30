@@ -5,7 +5,7 @@
 #include <array>
 #include <Eigen/Dense>
 #include <Eigen/Core>
-
+#include <Eigen/StdVector>
 namespace state_space{
     //exponential coordinate of se(3) s = [w,v]
     typedef Eigen::Matrix<double,6,1> R6;

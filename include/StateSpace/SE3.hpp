@@ -41,6 +41,8 @@ namespace state_space {
         return ad_ret;
     }
 
+    class SE3;
+    typedef std::vector<SE3,Eigen::aligned_allocator<SE3>> SE3_Vector;
 
     class SE3 : public virtual StateSpace<SE3> {
     protected:
@@ -64,6 +66,7 @@ namespace state_space {
             return se_3{VecTose3(Axis())};
         };
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         explicit SE3(int dimensions=6)
         {
@@ -96,28 +99,30 @@ namespace state_space {
         {
             Eigen::Vector3d translation{pose_with_quaternion.block<3,1>(0,0)};
             Eigen::Quaterniond rotation{pose_with_quaternion.block<4,1>(3,0)};
-            Eigen::Affine3d transformation_matrix{};
-            transformation_matrix.translation() = translation;
-            transformation_matrix.linear() = rotation.toRotationMatrix();
+            SE_3 transformation_matrix;
+            transformation_matrix<<rotation.toRotationMatrix(),translation,
+                                    0,0,0,1;
             *this = SE3(transformation_matrix);
         }
         explicit SE3(const Eigen::Affine3d &transformation_matrix)
         {
             *this = SE3(transformation_matrix.matrix());
         }
-
+        /**
+         * \note Construct SE3 using transform matrix may lose some data, if it's rotation part isn't orthogonal
+         */
         explicit SE3(const SE_3 &transformation_matrix)
         {
-            _twist_3d_ = se3ToVec(MatrixLog(transformation_matrix));
-            SE3_matrix_ = transformation_matrix;
+            SO_3 temp_SO_3(transformation_matrix.block<3,3>(0,0));
+            SO3 SO3_part(temp_SO_3);
+            *this = SE3(SO3_part,transformation_matrix.block<3,1>(0,3));
         }
 
         explicit SE3(const SO3 &SO3_part, const Eigen::Vector3d &translation_part)
         {
-            SE_3 transformation_matrix;
-            transformation_matrix<<SO3_part.SO3Matrix(),translation_part,
-                    0,0,0,1;
-            *this = SE3(transformation_matrix);
+            SE3_matrix_<<  SO3_part.SO3Matrix(),translation_part,
+                            0,0,0,1;
+            _twist_3d_ = se3ToVec(MatrixLog(SE3_matrix_));
         }
         ~SE3() override = default;
 
@@ -166,12 +171,14 @@ namespace state_space {
         }
 
         SE3 operator+(const SE3 &input) const override {
-            SE_3 result{this->SE3Matrix() * input.SE3Matrix()};
+            SE_3 result{SE_3::Zero()};
+            result.noalias() += this->SE3Matrix() * input.SE3Matrix();
             return SE3(result);
         };
 
         SE3 operator-(const SE3 &input) const override {
-            SE_3 tmp_matrix(input.SE3Matrix().inverse() * this->SE3Matrix());
+            SE_3 tmp_matrix{SE_3::Zero()};
+            tmp_matrix.noalias() += input.SE3Matrix().inverse() * this->SE3Matrix();
             return SE3(tmp_matrix);
         };
 
@@ -281,6 +288,20 @@ namespace state_space {
             return SE3(temp_twist);
         };
 
+        static inline bool isSE3(const SE_3& transform)
+        {
+            return (SO3::isOrthogonal(transform.block<3,3>(0,0)))&&
+                    transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(),
+                                                        Eigen::NumTraits<double>::dummy_precision());
+        }
+
+        static inline SE_3 projectToSE3(const SE_3& transform)
+        {
+            SE_3 temp;
+            temp<<SO3::projectToSO3(transform.block<3,3>(0,0)),transform.block<3,1>(0,3),
+                  0,0,0,1;
+            return temp;
+        }
     };
 }
 

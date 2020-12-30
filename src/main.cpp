@@ -1,18 +1,21 @@
+#define Eigen_MKL_USE_ALL
 #include <iostream>
-#include "StateSpace/SE3.hpp"
-#include "StateSpace/SO3.hpp"
-#include "Kinematics/Kinematics.h"
-#include <ctime>
-#include "StateSpace/StateSpace.hpp"
-#include "planner/Planner.hpp"
-
+#include "Eigen/Core"
+#include "Eigen/Dense"
 int main()
 {
-    Eigen::MatrixX2d bounds(2,2);
-    bounds<<680,0,
-            480,0;
-    state_space::Rn start_state = planner::randomState<state_space::Rn>(&bounds,2);
-    state_space::Rn goal_state = planner::randomState<state_space::Rn>(&bounds,2);
-    std::cout<<goal_state.Vector().transpose()<<std::endl;
-    std::cout<<start_state.Vector().transpose()<<std::endl;
+
+    Eigen::MatrixXd A(1000,1000),B(1000,1000);
+    A.setRandom();B.setRandom();
+    Eigen::MatrixXd C(1000,1000);
+    C.setZero();
+    clock_t start=clock();
+    C.noalias() += A*B;
+    clock_t end=clock();
+    std::cout<<(double)(end-start)/CLOCKS_PER_SEC;
+    std::vector<Eigen::Vector4f> a, b{};
+    asm("#it begins here!");
+    a = b;
+    asm("#it ends here!");
+
 }

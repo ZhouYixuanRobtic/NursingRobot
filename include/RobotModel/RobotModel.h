@@ -11,8 +11,11 @@
 #include <algorithm>
 #include <utility>
 #include <yaml-cpp/yaml.h>
+#include "macros/class_forward.h"
 namespace robot_model{
 
+
+    MOVEIT_CLASS_FORWARD(RobotModel);
     /**
      * @brief computes transform of every link
      * @note only supports revolute joint
@@ -29,7 +32,8 @@ namespace robot_model{
         state_space::SE3 _ee_configuration{};
 
         /**@brief single home configuration for every joint*/
-        std::map<std::string,state_space::SE3> _joint_configurations;
+        std::map<const std::string, state_space::SE3, std::less<>,
+                Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > _joint_configurations;
 
         /**@brief single screw axis using for computing transforms*/
         const state_space::SE3 _single_axis{state_space::SE3::UnitZ()};
@@ -41,7 +45,8 @@ namespace robot_model{
         std::map<std::string,std::string> _link_mesh_path;
 
     public:
-        explicit RobotModel(std::string model_config);
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        explicit RobotModel(std::string model_config,const state_space::JointSpace& joint_angles);
 
         ~RobotModel() = default;
 
@@ -68,10 +73,10 @@ namespace robot_model{
         std::vector<std::string> getLinkMeshPaths() const;
 
         /**@brief compute transform for every link using current joint angles*/
-        std::vector<state_space::SE3> computeTransform() const;
+        state_space::SE3_Vector computeTransform() const;
 
         /**@brief compute transform for every link using given joint angles*/
-        std::vector<state_space::SE3>  computeTransform(const state_space::JointSpace& joint_angles) const;
+        state_space::SE3_Vector  computeTransform(const state_space::JointSpace& joint_angles) const;
 
     };
 }

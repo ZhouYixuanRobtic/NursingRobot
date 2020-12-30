@@ -33,6 +33,7 @@ namespace state_space{
         return R3{-a_so3(1, 2), a_so3(0, 2), -a_so3(0, 1)};
     }
 
+
     class SO3 : public virtual StateSpace<SO3>{
     private:
         R3 _twist_2d_{};
@@ -63,10 +64,13 @@ namespace state_space{
         }
         explicit SO3(const SO_3 & rotation_matrix)
         {
+            /**
+             * \note Construct SO3 using rotation_matrix, may change that rotation matrix if it's not orthogonal
+             * */
             //R3 twist = so3ToVec(MatrixLog(rotation_matrix));
             Eigen::AngleAxisd rotation_vector(rotation_matrix);
             _twist_2d_ = rotation_vector.axis()*rotation_vector.angle();
-            SO3_MATRIX_ = rotation_matrix;
+            SO3_MATRIX_ = rotation_vector.matrix();
         }
         explicit SO3(const Eigen::Matrix<double,4,1> & quaternion_)
         {
@@ -103,12 +107,14 @@ namespace state_space{
         }
         SO3 operator+(const SO3 & input) const override
         {
-            SO_3 result{this->SO3Matrix() * input.SO3Matrix()};
+            SO_3 result{SO_3::Zero()};
+            result.noalias() += this->SO3Matrix() * input.SO3Matrix();
             return SO3(result);
         };
         SO3 operator-(const SO3 & input) const override
         {
-            SO_3 tmp_matrix(input.SO3Matrix().inverse() * this->SO3Matrix());
+            SO_3 tmp_matrix{SO_3::Zero()};
+            tmp_matrix.noalias() +=input.SO3Matrix().inverse() * this->SO3Matrix();
             return SO3(tmp_matrix);
         };
         SO3 operator*(double s) const override
@@ -210,11 +216,34 @@ namespace state_space{
                 Eigen::AngleAxisd rotation_vector(SO3_);
                 double theta = rotation_vector.angle();
                 //Warning:
-                // here exist a multiple value problem,temporarily fixed by using angle axis;
+                // here exists a multiple value problem,temporarily fixed by using angle axis;
                 //double theta = std::acos(acosinput);
                 m_ret = theta*(SO3_-SO3_.transpose())/(2.0*sin(theta));
             }
             return m_ret;
+        }
+
+        /**
+        * \brief Check whether the given matrix is really (mathematically) an orthogonal (rotation) matrix.
+        */
+        static inline bool isOrthogonal(const state_space::SO_3& matrix)
+        {
+            return (matrix*matrix.transpose()).isApprox(state_space::SO_3::Identity(),
+                                                        Eigen::NumTraits<double>::dummy_precision());
+        }
+        /**
+         * \brief Project a 3x3 matrix into SO3
+         * @param matrix a 3X3 matrix
+         * @return a mathematically orthogonal matrix
+         */
+        static state_space::SO_3 projectToSO3(const state_space::SO_3& matrix)
+        {
+            Eigen::JacobiSVD<state_space::SO_3> svd(matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
+            SO_3 R = svd.matrixU() * svd.matrixV().transpose();
+            if (R.determinant() < 0)
+                // In this case the result may be far from M; reverse sign of 3rd column
+                R.col(2) *= -1;
+            return R;
         }
 
     };

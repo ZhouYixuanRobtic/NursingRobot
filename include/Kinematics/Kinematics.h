@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <utility>
 #include <yaml-cpp/yaml.h>
+#include <macros/class_forward.h>
+
 namespace kinematics{
     enum IK_SINGULAR_CODE{
         SUCCESS,
@@ -33,17 +35,18 @@ namespace kinematics{
     static double _nearZero(const double& val){return (std::abs(val) < 1e-8) ? 0.0 : val;};
 
     /**@brief judge the sign of val*/
-    static int SIGN(double val){return (val > 0) - (val < 0);}
+    static int SIGN(double val){return (val > 0) - (val < 0);};
 
 
 
+    MOVEIT_CLASS_FORWARD(Kinematics);
     /**
      * @brief Kinematics class computes fk and ik.
      */
     class Kinematics {
     protected:
         //screw axes
-        std::vector<state_space::SE3> all_screw_axes_{};
+        state_space::SE3_Vector all_screw_axes_{};
         //boolean, true for describing screw axes based on body frame, false for space frame.
         bool IN_BODY_{};
         //home configuration describing the pose of the last joint coordinates frame with respect to the first joint coordinates frame
@@ -92,10 +95,11 @@ namespace kinematics{
 
 
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         explicit Kinematics(const std::string & yaml_name);
 
-        explicit Kinematics(const std::vector<state_space::SE3> & all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame=false);
+        explicit Kinematics(const state_space::SE3_Vector & all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame=false);
 
         ~Kinematics() = default;
 
@@ -153,7 +157,7 @@ namespace kinematics{
         };
 
         /**@brief an overload version of nIK(SE_3)*/
-        bool nIk(const Eigen::Affine3d& desired_pose,state_space::JointSpace& joint_angles, double eomg=1e-7, double ev=5e-7)
+        bool nIk(const Eigen::Isometry3d & desired_pose, state_space::JointSpace& joint_angles, double eomg= 1e-7, double ev= 5e-7)
         {
             return nIk(desired_pose.matrix(),joint_angles,eomg,ev);
         };
@@ -167,7 +171,7 @@ namespace kinematics{
         state_space::JointSpace nearestIkSolution(const state_space::SE_3 & desired_pose,
                                                   const state_space::JointSpace& reference, bool isConsecutive =false);
 
-        state_space::JointSpace nearestIkSolution(const Eigen::Affine3d & desired_pose,
+        state_space::JointSpace nearestIkSolution(const Eigen::Isometry3d & desired_pose,
                                                   const state_space::JointSpace& reference, bool isConsecutive =false)
         {
             return nearestIkSolution(desired_pose.matrix(),reference,isConsecutive);

@@ -9,6 +9,12 @@
 #include "StateSpace/StateSpace.hpp"
 namespace state_space{
 
+    class JointSpace;
+    /**
+     * \brief aligned allocator for SSE usage
+     */
+    typedef std::vector<JointSpace,Eigen::aligned_allocator<JointSpace>> JointSpace_Vector;
+
     class JointSpace: public virtual StateSpace<JointSpace> {
     protected:
         int _dimensions_{};
@@ -24,8 +30,10 @@ namespace state_space{
                     val+= 2 * _lower_limit_;
             }
         }
-
+        enum { NeedsToAlign = (sizeof(_data_)%16)==0 };
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
+
         JointSpace(const JointSpace& other)
          : StateSpace(other) {
             this->_dimensions_ = other.Vector().size();

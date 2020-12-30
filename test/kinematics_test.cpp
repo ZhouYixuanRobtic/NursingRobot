@@ -1,3 +1,4 @@
+#define EIGEN_MKL_USE_ALL
 #include "StateSpace/JointSpace.hpp"
 #include "StateSpace/rn.hpp"
 #include "StateSpace/SE3.hpp"
@@ -7,6 +8,8 @@
 #include "planner/Planner.hpp"
 int main()
 {
+    state_space::R6 temp_twist = planner::randomState<state_space::Rn>(nullptr,6).Vector();
+    state_space::SE3 A(temp_twist);
     kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
 
     aubo_i5_kinematics.setAnalyticalIK(kinematics::aubo_i5_analytical_IK);

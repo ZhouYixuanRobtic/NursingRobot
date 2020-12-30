@@ -25,7 +25,9 @@ namespace kinematics{
         bool wrist_singular{},elbow_singular{};
 
         //step 1 calculate p1
-        state_space::SE_3 M1{a * home_configuration.SE3Matrix().inverse()};
+        state_space::SE_3 M1(state_space::SE_3::Zero());
+        M1.noalias() += a * home_configuration.SE3Matrix().inverse();
+
         double p1[2]{a(0, 3) + a(0, 2) * (h1 - h2),
                      a(1, 3) + a(1, 2) * (h1 - h2)};
 
@@ -82,7 +84,8 @@ namespace kinematics{
                         -sin(theta5[index]),cos(theta5[index]),0,h1*(1-cos(theta5[index])),
                         0,0,1,0,
                         0,0,0,1;
-                state_space::SE_3 M3{e_i1 * M1 * e_i6 * e_i5};
+                state_space::SE_3 M3{state_space::SE_3::Zero()};
+                M3.noalias() += e_i1 * M1 * e_i6 * e_i5;
                 double r6 = M3(0,3)+d1p2*M3(0,2);
                 double r7 = M3(2,3)+d1p2*M3(0,0);
                 sum_theta = atan2(M3(0,2),M3(0,0));

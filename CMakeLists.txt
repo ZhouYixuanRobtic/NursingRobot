@@ -5,11 +5,11 @@ set(CMAKE_CXX_STANDARD 14)
 # include cmake files in the 'cmake folder'
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 FIND_PACKAGE(OpenMP REQUIRED)
 if(OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
@@ -32,6 +32,7 @@ find_package(fcl REQUIRED)
 find_package(Flann REQUIRED)
 add_library(Flann STATIC IMPORTED)
 
+find_package(geometric_shapes REQUIRED)
 
 include_directories (
         SYSTEM
@@ -39,6 +40,7 @@ include_directories (
         ${EIGEN3_INCLUDE_DIRS}
         ${YAML_INCLUDE_DIRS}
         ${FCL_INCLUDE_DIRS}
+
 )
 link_directories(
         /user/local/lib
@@ -71,7 +73,7 @@ target_link_libraries(RobotModel Kinematics StateSpace ${YAML_LIBRARIES})
 
 #executale
 add_executable(NursingRobot src/main.cpp)
-target_link_libraries(NursingRobot StateSpace Kinematics ${YAML_LIBRARIES})
+target_link_libraries(NursingRobot )
 
 add_executable(6dTest test/6d_rrt_test.cpp)
 target_link_libraries(6dTest StateSpace RRT)

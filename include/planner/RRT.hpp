@@ -161,7 +161,7 @@ namespace planner{
 
             setStepLen(0.1);
             setMaxStepLen(5);
-            setMaxIterations(1000);
+            setMaxIterations(10000);
             setGoalBias(0.1);
             setGoalMaxDist(0.15);
         };

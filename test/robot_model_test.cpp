@@ -1,3 +1,4 @@
+#define EIGEN_MKL_USE_ALL
 #include "RobotModel/RobotModel.h"
 #include "StateSpace/SE3.hpp"
 #include "StateSpace/JointSpace.hpp"
@@ -5,7 +6,6 @@
 #include "Kinematics/Kinematics.h"
 int main()
 {
-
     Eigen::Matrix<double,7,1> pose_with_quaternion;
 
     pose_with_quaternion<<0.000, 0.000, 0.122,0,0,1,0;
@@ -13,16 +13,13 @@ int main()
     pose_with_quaternion<<-0.0405, 0.0, 0.14775,0.000, -0.000, sqrt(2)/2, sqrt(2)/2;
     state_space::SE3 ee_configuration{pose_with_quaternion};
 
-    robot_model::RobotModel aubo_model("../config/aubo_i5.yaml");
+    robot_model::RobotModel aubo_model("../config/aubo_i5.yaml",state_space::JointSpace());
     aubo_model.setEndEffector(ee_configuration);
     aubo_model.setMount(mount_configuration);
 
     kinematics::Kinematics aubo_kinematics("../config/aubo_i5.yaml");
     aubo_kinematics.setEndEffector(ee_configuration);
     aubo_kinematics.setMount(mount_configuration);
-
-    //set as zero
-    aubo_model.setCurrentJointAngles(state_space::JointSpace());
 
     auto result = aubo_model.computeTransform();
     auto ee_pose = *(result.end()-1);
@@ -36,4 +33,5 @@ int main()
     {
         std::cout<<mesh_path<<std::endl;
     }
+
 }

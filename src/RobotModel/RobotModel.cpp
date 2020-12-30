@@ -1,9 +1,9 @@
 #include "RobotModel/RobotModel.h"
 using namespace robot_model;
-RobotModel::RobotModel(std::string model_config)
+RobotModel::RobotModel(std::string model_config,const state_space::JointSpace& joint_angles)
     :_model_config(std::move(model_config))
 {
-    _current_joint_angles = state_space::JointSpace();
+    _current_joint_angles = joint_angles;
     YAML::Node doc = YAML::LoadFile(_model_config);
     try
     {
@@ -34,10 +34,9 @@ RobotModel::RobotModel(std::string model_config)
         perror("tagParam.yaml is invalid.");
     }
 }
-
-std::vector<state_space::SE3> RobotModel::computeTransform() const
+state_space::SE3_Vector RobotModel::computeTransform() const
 {
-    std::vector<state_space::SE3> result{};
+    state_space::SE3_Vector result{};
     state_space::SE3 temp_SE3 = _mount_configuration;
     for(auto it=_joint_configurations.begin();it!=_joint_configurations.end();it++)
     {
@@ -49,9 +48,9 @@ std::vector<state_space::SE3> RobotModel::computeTransform() const
     return result;
 }
 
-std::vector<state_space::SE3> RobotModel::computeTransform(const state_space::JointSpace &joint_angles) const
+state_space::SE3_Vector RobotModel::computeTransform(const state_space::JointSpace &joint_angles) const
 {
-    std::vector<state_space::SE3> result{};
+    state_space::SE3_Vector result{};
     state_space::SE3 temp_SE3 = _mount_configuration;
     for(auto it=_joint_configurations.begin();it!=_joint_configurations.end();it++)
     {
