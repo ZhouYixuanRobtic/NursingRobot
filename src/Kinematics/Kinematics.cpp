@@ -13,7 +13,7 @@ Kinematics::Kinematics(const std::string &yaml_name)
     analytical_ik_func_ = nullptr;
     _loadModel(yaml_name);
 }
-Kinematics::Kinematics(const state_space::SE3_Vector &all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame)
+Kinematics::Kinematics(const state_space::vector_SE3 &all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame)
 {
     all_screw_axes_ = all_screw_axes;
     home_configuration_ = home_configuration;

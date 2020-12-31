@@ -16,6 +16,7 @@ namespace robot_model{
 
 
     MOVEIT_CLASS_FORWARD(RobotModel);
+    DECLARE_SEQUENTIAL_CONTAINER(RobotModel,RobotModel);
     /**
      * @brief computes transform of every link
      * @note only supports revolute joint
@@ -32,7 +33,7 @@ namespace robot_model{
         state_space::SE3 _ee_configuration{};
 
         /**@brief single home configuration for every joint*/
-        std::map<const std::string, state_space::SE3, std::less<>,
+        std::map<std::string, state_space::SE3, std::less<std::string>,
                 Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > _joint_configurations;
 
         /**@brief single screw axis using for computing transforms*/
@@ -73,10 +74,10 @@ namespace robot_model{
         std::vector<std::string> getLinkMeshPaths() const;
 
         /**@brief compute transform for every link using current joint angles*/
-        state_space::SE3_Vector computeTransform() const;
+        state_space::vector_SE3 computeTransform() const;
 
         /**@brief compute transform for every link using given joint angles*/
-        state_space::SE3_Vector  computeTransform(const state_space::JointSpace& joint_angles) const;
+        state_space::vector_SE3 computeTransform(const state_space::JointSpace& joint_angles) const;
 
     };
 }

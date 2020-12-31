@@ -234,7 +234,7 @@ namespace state_space{
         /**
          * \brief Project a 3x3 matrix into SO3
          * @param matrix a 3X3 matrix
-         * @return a mathematically orthogonal matrix
+         * @return a mathematically orthogonal (least square solution) matrix
          */
         static state_space::SO_3 projectToSO3(const state_space::SO_3& matrix)
         {

@@ -4,6 +4,7 @@
 #include "StateSpace.hpp"
 #include "SO3.hpp"
 #include "rn.hpp"
+
 namespace state_space {
 
     /**
@@ -40,10 +41,7 @@ namespace state_space {
                 VecToso3(a_SE3.block<3, 1>(0, 3)) * a_SE3.block<3, 3>(0, 0), a_SE3.block<3, 3>(0, 0);
         return ad_ret;
     }
-
-    class SE3;
-    typedef std::vector<SE3,Eigen::aligned_allocator<SE3>> SE3_Vector;
-
+    ALIGNED_CLASS_STL_FORWARD(SE3);
     class SE3 : public virtual StateSpace<SE3> {
     protected:
         R6 _twist_3d_{};
@@ -303,6 +301,7 @@ namespace state_space {
             return temp;
         }
     };
+
 }
 
 #endif //NURSINGROBOT_SE3_HPP

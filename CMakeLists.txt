@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 project(NursingRobot)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 # include cmake files in the 'cmake folder'
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -32,8 +32,6 @@ find_package(fcl REQUIRED)
 find_package(Flann REQUIRED)
 add_library(Flann STATIC IMPORTED)
 
-find_package(geometric_shapes REQUIRED)
-
 include_directories (
         SYSTEM
         include
@@ -57,6 +55,15 @@ set(lib_SRC
 
 add_library("StateSpace" STATIC  ${lib_SRC})
 
+set(lib_RM
+        include/RobotModel/RobotModel.h
+        include/RobotModel/joint_model.h
+        include/RobotModel/link_model.h
+        include/RobotModel/aabb.h
+        src/RobotModel/joint_model.cpp
+        src/RobotModel/link_model.cpp
+        src/RobotModel/RobotModel.cpp
+        src/RobotModel/aabb.cpp)
 
 add_library(Kinematics src/Kinematics/Kinematics.cpp include/Kinematics/custom_kinematics.hpp)
 target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES})
@@ -67,7 +74,7 @@ target_link_libraries(RRT StateSpace Kinematics)
 add_library(PlanningInterface src/planner/PlanningInterface.cpp)
 target_link_libraries(PlanningInterface StateSpace Kinematics)
 
-add_library(RobotModel src/RobotModel/RobotModel.cpp)
+add_library(RobotModel ${lib_RM})
 target_link_libraries(RobotModel Kinematics StateSpace ${YAML_LIBRARIES})
 
 

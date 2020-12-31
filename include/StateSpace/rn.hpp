@@ -8,7 +8,7 @@
 #include "StateSpace/StateSpace.hpp"
 namespace state_space{
 
-    class Rn;
+    ALIGNED_CLASS_STL_FORWARD(Rn);
 
     class Rn : public virtual StateSpace<Rn>{
     protected:

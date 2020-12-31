@@ -46,7 +46,7 @@ namespace kinematics{
     class Kinematics {
     protected:
         //screw axes
-        state_space::SE3_Vector all_screw_axes_{};
+        state_space::vector_SE3 all_screw_axes_{};
         //boolean, true for describing screw axes based on body frame, false for space frame.
         bool IN_BODY_{};
         //home configuration describing the pose of the last joint coordinates frame with respect to the first joint coordinates frame
@@ -99,7 +99,7 @@ namespace kinematics{
 
         explicit Kinematics(const std::string & yaml_name);
 
-        explicit Kinematics(const state_space::SE3_Vector & all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame=false);
+        explicit Kinematics(const state_space::vector_SE3 & all_screw_axes, const state_space::SE3 &home_configuration, bool isInBodyFrame=false);
 
         ~Kinematics() = default;
 

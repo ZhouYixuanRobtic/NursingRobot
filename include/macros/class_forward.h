@@ -38,7 +38,16 @@
 #define NURSINGROBOT_CLASS_FORWARD_H
 
 #include <memory>
-
+#include <deque>
+#include <list>
+#include <queue>
+#include <stack>
+#include <forward_list>
+#define DECLARE_SEQUENTIAL_CONTAINER(Name, Type)                                                                       \
+  typedef std::vector<Type,Eigen::aligned_allocator<Type>>  vector_##Name;                                             \
+  typedef std::deque<Type,Eigen::aligned_allocator<Type>>   deque_##Name;                                              \
+  typedef std::list<Type,Eigen::aligned_allocator<Type>>    list_##Name;                                               \
+  typedef std::forward_list<Type,Eigen::aligned_allocator<Type>> forward_list_##Name;
 /**
  * \def MOVEIT_DELCARE_PTR
  * Macro that given a Name and a Type declares the following types:
@@ -95,6 +104,12 @@
 #define MOVEIT_STRUCT_FORWARD(C)                                                                                       \
   struct C;                                                                                                            \
   MOVEIT_DECLARE_PTR(C, C);
+/***
+ *\def check;
+ */
+#define ALIGNED_CLASS_STL_FORWARD(C)                                                                                   \
+  class C;                                                                                                             \
+  DECLARE_SEQUENTIAL_CONTAINER(C, C);
 
 
 #endif //NURSINGROBOT_CLASS_FORWARD_H

@@ -46,6 +46,8 @@
 #include <Eigen/Geometry>
 #include <util/eigen_stl_vector_container.h>
 #include <macros/class_forward.h>
+#include <util/check_isometry.h>
+
 namespace shapes
 {
     MOVEIT_CLASS_FORWARD(Shape);  // Defines ShapePtr, ConstPtr, WeakPtr... etc
@@ -62,7 +64,7 @@ namespace robot_model
     using LinkModelMapConst = std::map<std::string, const LinkModel*>;
 
     /** \brief Map from link model instances to Eigen transforms */
-    using LinkTransformMap = std::map<const LinkModel*, Eigen::Isometry3d, std::less<const LinkModel* >,
+    using LinkTransformMap = std::map<const LinkModel*, Eigen::Isometry3d, std::less<>,
             Eigen::aligned_allocator<std::pair<const LinkModel* const, Eigen::Isometry3d> > >;
 
     /** \brief A link from the robot. Contains the constant transform applied to the link and its geometry */

@@ -7,12 +7,14 @@
 #include "planner/Planner.hpp"
 #include <random>
 namespace planner{
+
     template <typename T>
     class RRT {
     protected:
-        std::deque<Vertex<T>> _nodes;
+        std::deque<Vertex<T>,Eigen::aligned_allocator<Vertex<T>>> _nodes;
 
-        std::unordered_map<T, Vertex<T>*, std::function<size_t(T)>> _node_map;
+        std::unordered_map<T, Vertex<T>*,std::function<size_t(T)>,std::equal_to<T>,
+        Eigen::aligned_allocator<std::pair<T,Vertex<T>*>> > _node_map;
 
         Vertex<T>* _tail;
         T _start,_goal;
@@ -117,7 +119,7 @@ namespace planner{
 
         virtual bool _collision_check(const T& from, const T& to){return true;};
 
-        virtual void _extract_path(std::vector<T> &vectorOut, bool reverse)
+        virtual void _extract_path(std::vector<T,Eigen::aligned_allocator<T>> &vectorOut, bool reverse)
         {
             const Vertex<T>* vertex = _tail;
             if(reverse)
@@ -145,6 +147,7 @@ namespace planner{
 
 
     public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         RRT(const RRT<T> &) = delete;
         RRT& operator=(const RRT<T> &) = delete;
         RRT(const T& start,const T& goal,std::function<size_t(T)> hashT, int dimensions, bool forward = true,
@@ -269,10 +272,9 @@ namespace planner{
             }
             return false;
         }
-
-        std::vector<T> GetPath(bool reverse=false)
+        std::vector<T,Eigen::aligned_allocator<T>> GetPath(bool reverse=false)
         {
-            std::vector<T> path;
+            std::vector<T,Eigen::aligned_allocator<T>> path;
             _extract_path(path,reverse);
             path.template emplace_back(_goal);
             return path;

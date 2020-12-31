@@ -35,9 +35,9 @@ namespace robot_model
 
     int JointModel::getLocalVariableIndex(const std::string& variable) const
     {
-        VariableIndexMap::const_iterator it = variable_index_map_.find(variable);
+        auto it = variable_index_map_.find(variable);
         if (it == variable_index_map_.end())
-            throw Exception("Could not find variable '" + variable + "' to get bounds for within joint '" + name_ + "'");
+            throw std::invalid_argument("Could not find variable '" + variable + "' to get bounds for within joint '" + name_ + "'");
         return it->second;
     }
 
@@ -67,7 +67,8 @@ namespace robot_model
     {
         for (std::size_t i = 0; i < other_bounds.size(); ++i)
             if (other_bounds[i].max_velocity_ + margin < values[i])
-                return false;
+                return false;10.
+
             else if (other_bounds[i].min_velocity_ - margin > values[i])
                 return false;
         return true;

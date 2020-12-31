@@ -9,11 +9,7 @@
 #include "StateSpace/StateSpace.hpp"
 namespace state_space{
 
-    class JointSpace;
-    /**
-     * \brief aligned allocator for SSE usage
-     */
-    typedef std::vector<JointSpace,Eigen::aligned_allocator<JointSpace>> JointSpace_Vector;
+    ALIGNED_CLASS_STL_FORWARD(JointSpace);
 
     class JointSpace: public virtual StateSpace<JointSpace> {
     protected:
