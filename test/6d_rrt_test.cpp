@@ -7,8 +7,8 @@
 #include "planner/RRT.hpp"
 #include "macros/class_forward.h"
 
-int main(int argc, char **argv) {
-    state_space::JointSpace a(5);
+int main(int argc, char** argv)
+{
     using SPCIFIC_STATE = state_space::SE3;
     int dimensions = 6;
     auto start_state = planner::randomState<SPCIFIC_STATE>(nullptr, dimensions);
@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
         clock_t end(clock());
         std::cout << (double) (end - start) / CLOCKS_PER_SEC << std::endl;
         std::vector<SPCIFIC_STATE, Eigen::aligned_allocator<SPCIFIC_STATE>> path = rrt_2d->GetPath();
-        for (const auto &it: path) {
+        for (const auto& it: path) {
             std::cout << it.pose_with_quaternion().transpose() << std::endl;
         }
     }

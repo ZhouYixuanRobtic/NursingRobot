@@ -7,7 +7,8 @@
 
 using namespace kinematics;
 
-Kinematics::Kinematics(const std::string& yaml_name) {
+Kinematics::Kinematics(const std::string& yaml_name)
+{
     ee_configuration_ = state_space::SE3();
     mount_configuration_ = state_space::SE3();
     analytical_ik_func_ = nullptr;
@@ -15,7 +16,8 @@ Kinematics::Kinematics(const std::string& yaml_name) {
 }
 
 Kinematics::Kinematics(const state_space::vector_SE3& all_screw_axes, const state_space::SE3& home_configuration,
-                       bool isInBodyFrame) {
+                       bool isInBodyFrame)
+{
     all_screw_axes_ = all_screw_axes;
     home_configuration_ = home_configuration;
     IN_BODY_ = isInBodyFrame;
@@ -24,7 +26,8 @@ Kinematics::Kinematics(const state_space::vector_SE3& all_screw_axes, const stat
     analytical_ik_func_ = nullptr;
 }
 
-void Kinematics::_loadModel(const std::string& yaml_name) {
+void Kinematics::_loadModel(const std::string& yaml_name)
+{
     YAML::Node doc = YAML::LoadFile(yaml_name);
     try {
         std::vector<double> pose_with_quaternion = doc["aubo_i5"]["home_configuration"].as<std::vector<double>>();
@@ -52,7 +55,8 @@ void Kinematics::_loadModel(const std::string& yaml_name) {
     }
 }
 
-state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace& joint_angles) {
+state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace& joint_angles)
+{
     state_space::SE_3 ee_pose{state_space::SE_3::Identity()};
     for (int i = 0; i < joint_angles.size(); ++i) {
         ee_pose = ee_pose * all_screw_axes_[i](joint_angles[i]).SE3Matrix();
@@ -61,7 +65,8 @@ state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace& joint_an
     return ee_pose;
 }
 
-state_space::SE_3 Kinematics::_fkInBody(const state_space::JointSpace& joint_angles) {
+state_space::SE_3 Kinematics::_fkInBody(const state_space::JointSpace& joint_angles)
+{
     state_space::SE_3 ee_pose{home_configuration_.SE3Matrix()};
     for (int i = 0; i < joint_angles.size(); ++i) {
         ee_pose = ee_pose * all_screw_axes_[i](joint_angles[i]).SE3Matrix();
@@ -69,7 +74,8 @@ state_space::SE_3 Kinematics::_fkInBody(const state_space::JointSpace& joint_ang
     return ee_pose;
 }
 
-Eigen::MatrixXd Kinematics::jacobianSpace(const state_space::JointSpace& joint_angles) {
+Eigen::MatrixXd Kinematics::jacobianSpace(const state_space::JointSpace& joint_angles)
+{
     Eigen::MatrixXd jacobian_matrix(6, 6);
     jacobian_matrix.col(0) = all_screw_axes_[0].Axis();
     state_space::SE_3 tmp_matrix = state_space::SE_3::Identity();
@@ -80,7 +86,8 @@ Eigen::MatrixXd Kinematics::jacobianSpace(const state_space::JointSpace& joint_a
     return jacobian_matrix;
 }
 
-Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace& joint_angles) {
+Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace& joint_angles)
+{
     Eigen::MatrixXd jacobian_matrix(6, 6);
     state_space::SE_3 tmp_matrix = state_space::SE_3::Identity();
     jacobian_matrix.col(joint_angles.size() - 1) = all_screw_axes_[joint_angles.size() - 1].Axis();
@@ -92,7 +99,8 @@ Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace& joint_an
 }
 
 bool Kinematics::_nIkInSpace(const state_space::SE_3& desired_pose, state_space::JointSpace& joint_angles, double eomg,
-                             double ev) {
+                             double ev)
+{
     int i = 0;
     int max_iterations = 50;
     state_space::SE_3 Tfk = _fkInSpace(joint_angles);
@@ -117,7 +125,8 @@ bool Kinematics::_nIkInSpace(const state_space::SE_3& desired_pose, state_space:
 }
 
 bool Kinematics::_nIkInBody(const state_space::SE_3& desired_pose, state_space::JointSpace& joint_angles, double eomg,
-                            double ev) {
+                            double ev)
+{
     int i = 0;
     int max_iterations = 50;
     state_space::SE_3 Tfk = _fkInBody(joint_angles).matrix();
@@ -143,7 +152,8 @@ bool Kinematics::_nIkInBody(const state_space::SE_3& desired_pose, state_space::
 
 IK_SINGULAR_CODE
 Kinematics::analyticalIkSolutions(Eigen::MatrixXd& joint_solutions, const state_space::SE_3& desired_pose,
-                                  const state_space::JointSpace* ik_references_ptr) {
+                                  const state_space::JointSpace* ik_references_ptr)
+{
     if (analytical_ik_func_) {
         return analytical_ik_func_(joint_solutions, home_configuration_, _get_pose_in_first(desired_pose),
                                    ik_references_ptr);
@@ -152,7 +162,8 @@ Kinematics::analyticalIkSolutions(Eigen::MatrixXd& joint_solutions, const state_
 }
 
 bool Kinematics::allValidIkSolutions(Eigen::MatrixXd& joint_solutions, const state_space::SE_3& desired_pose,
-                                     const state_space::JointSpace* reference) {
+                                     const state_space::JointSpace* reference)
+{
 
     IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, nullptr);
     if (ret_code == NO_SOLUTIONS) {
@@ -181,7 +192,8 @@ bool Kinematics::allValidIkSolutions(Eigen::MatrixXd& joint_solutions, const sta
 
 state_space::JointSpace
 Kinematics::nearestIkSolution(const state_space::SE_3& desired_pose, const state_space::JointSpace& reference,
-                              bool isConsecutive) {
+                              bool isConsecutive)
+{
     //return the nearest ik solution
     state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
@@ -199,7 +211,8 @@ Kinematics::nearestIkSolution(const state_space::SE_3& desired_pose, const state
 
 state_space::JointSpace
 Kinematics::directedNearestIkSolution(const state_space::SE_3& desired_pose, const state_space::JointSpace& reference,
-                                      const state_space::JointSpace& tangent_reference) {
+                                      const state_space::JointSpace& tangent_reference)
+{
     state_space::JointSpace solution{reference};
     Eigen::MatrixXd joint_solutions;
     IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, nullptr);

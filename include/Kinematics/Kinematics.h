@@ -32,10 +32,12 @@ namespace kinematics {
                                            const state_space::JointSpace* ik_references_ptr)> analytical_ik_handled_t;
 
     /**@brief in case of zero denominator*/
-    static double _nearZero(const double& val) { return (std::abs(val) < 1e-8) ? 0.0 : val; };
+    static double _nearZero(const double& val)
+    { return (std::abs(val) < 1e-8) ? 0.0 : val; };
 
     /**@brief judge the sign of val*/
-    static int SIGN(double val) { return (val > 0) - (val < 0); };
+    static int SIGN(double val)
+    { return (val > 0) - (val < 0); };
 
 
     MOVEIT_CLASS_FORWARD(Kinematics);
@@ -85,13 +87,15 @@ namespace kinematics {
         void _loadModel(const std::string& yaml_name);
 
         /**@brief converts pose with respect to world frame into pose with respect to the first joint coordinate frame*/
-        state_space::SE_3 _get_pose_in_first(const state_space::SE_3& pose_in_world) {
+        state_space::SE_3 _get_pose_in_first(const state_space::SE_3& pose_in_world)
+        {
             return (mount_configuration_.SE3Matrix().inverse()) * pose_in_world *
                    (ee_configuration_.SE3Matrix().inverse());
         }
 
         /**@brief converts pose with respect to first coordinate frame into pose with respect to the world frame*/
-        state_space::SE_3 _get_pose_in_world(const state_space::SE_3& pose_in_first) {
+        state_space::SE_3 _get_pose_in_world(const state_space::SE_3& pose_in_first)
+        {
             return (mount_configuration_.SE3Matrix()) * pose_in_first * (ee_configuration_.SE3Matrix());
         }
 
@@ -108,28 +112,35 @@ namespace kinematics {
 
         /**@brief set home configuration*/
         void
-        setHomeConfiguration(const state_space::SE3& home_configuration) { home_configuration_ = home_configuration; };
+        setHomeConfiguration(const state_space::SE3& home_configuration)
+        { home_configuration_ = home_configuration; };
 
         /**@brief get stored home configuration*/
-        state_space::SE3 getHomeConfiguration() const { return home_configuration_; };
+        state_space::SE3 getHomeConfiguration() const
+        { return home_configuration_; };
 
         /**@brief set end effector configuration*/
-        void setEndEffector(const state_space::SE3& ee_configuration) { ee_configuration_ = ee_configuration; };
+        void setEndEffector(const state_space::SE3& ee_configuration)
+        { ee_configuration_ = ee_configuration; };
 
         /**@brief get stored end effector configuration*/
-        state_space::SE3 getEndEffector() const { return ee_configuration_; };
+        state_space::SE3 getEndEffector() const
+        { return ee_configuration_; };
 
         /**@brief set mount configuration*/
-        void setMount(const state_space::SE3& mount_configuration) { mount_configuration_ = mount_configuration; };
+        void setMount(const state_space::SE3& mount_configuration)
+        { mount_configuration_ = mount_configuration; };
 
         /**@brief get stored mount configuration*/
-        state_space::SE3 getMount() const { return mount_configuration_; };
+        state_space::SE3 getMount() const
+        { return mount_configuration_; };
 
         /**
          * @brief set an analytical Ik from outside
          * @param ik_func an analytical IK function;
          */
-        void setAnalyticalIK(analytical_ik_handled_t ik_func) { analytical_ik_func_ = std::move(ik_func); };
+        void setAnalyticalIK(analytical_ik_handled_t ik_func)
+        { analytical_ik_func_ = std::move(ik_func); };
 
         /**@brief call analytical ik method if exists or return NO_SOLUTIONS*/
         IK_SINGULAR_CODE analyticalIkSolutions(Eigen::MatrixXd& joint_solutions, const state_space::SE_3& desired_pose,
@@ -149,7 +160,8 @@ namespace kinematics {
         Eigen::MatrixXd jacobianBody(const state_space::JointSpace& joint_angles);
 
         /**@brief computes forward kinematics using the given joint angles*/
-        state_space::SE3 fk(const state_space::JointSpace& joint_angles) {
+        state_space::SE3 fk(const state_space::JointSpace& joint_angles)
+        {
             return IN_BODY_ ? state_space::SE3{_get_pose_in_world(_fkInBody(joint_angles))} :
                    state_space::SE3{_get_pose_in_world(_fkInSpace(joint_angles))};
         }
@@ -159,7 +171,8 @@ namespace kinematics {
          * @param desired_pose is a SE_3 value
          * */
         bool nIk(const state_space::SE_3& desired_pose, state_space::JointSpace& joint_angles, double eomg = 1e-7,
-                 double ev = 5e-7) {
+                 double ev = 5e-7)
+        {
             if (joint_angles.size() == 0)
                 throw std::invalid_argument("numerical ik method must have a reference, now it's empty");
             return IN_BODY_ ? _nIkInBody(_get_pose_in_first(desired_pose), joint_angles, eomg, ev) :
@@ -168,13 +181,15 @@ namespace kinematics {
 
         /**@brief an overload version of nIK(SE_3)*/
         bool nIk(const Eigen::Isometry3d& desired_pose, state_space::JointSpace& joint_angles, double eomg = 1e-7,
-                 double ev = 5e-7) {
+                 double ev = 5e-7)
+        {
             return nIk(desired_pose.matrix(), joint_angles, eomg, ev);
         };
 
         /**@brief an overload version of nIK(SE_3)*/
         bool nIk(const state_space::SE3& desired_pose, state_space::JointSpace& joint_angles, double eomg = 1e-7,
-                 double ev = 5e-7) {
+                 double ev = 5e-7)
+        {
             return nIk(desired_pose.SE3Matrix(), joint_angles, eomg, ev);
         };
 
@@ -183,13 +198,15 @@ namespace kinematics {
 
         state_space::JointSpace nearestIkSolution(const Eigen::Isometry3d& desired_pose,
                                                   const state_space::JointSpace& reference,
-                                                  bool isConsecutive = false) {
+                                                  bool isConsecutive = false)
+        {
             return nearestIkSolution(desired_pose.matrix(), reference, isConsecutive);
         };
 
         state_space::JointSpace nearestIkSolution(const state_space::SE3& desired_pose,
                                                   const state_space::JointSpace& reference,
-                                                  bool isConsecutive = false) {
+                                                  bool isConsecutive = false)
+        {
             return nearestIkSolution(desired_pose.SE3Matrix(), reference, isConsecutive);
         };
 

@@ -34,7 +34,8 @@ namespace state_space {
     typedef Eigen::Matrix<double, 6, 6> jacobian_mat;
 
 
-    static bool NearZero(const double val) {
+    static bool NearZero(const double val)
+    {
         return (std::abs(val) < 1e-8);
     }
 
@@ -72,7 +73,7 @@ namespace state_space {
 
         virtual const double* data() const = 0;
 
-        virtual int Dimensions() const = 0;
+        virtual unsigned int Dimensions() const = 0;
     };
 
 

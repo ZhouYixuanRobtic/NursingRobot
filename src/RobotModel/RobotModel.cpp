@@ -3,7 +3,8 @@
 using namespace robot_model;
 
 RobotModel::RobotModel(std::string model_config, const state_space::JointSpace& joint_angles)
-        : _model_config(std::move(model_config)) {
+        : _model_config(std::move(model_config))
+{
     _current_joint_angles = joint_angles;
     YAML::Node doc = YAML::LoadFile(_model_config);
     try {
@@ -30,7 +31,8 @@ RobotModel::RobotModel(std::string model_config, const state_space::JointSpace& 
     }
 }
 
-state_space::vector_SE3 RobotModel::computeTransform() const {
+state_space::vector_SE3 RobotModel::computeTransform() const
+{
     state_space::vector_SE3 result{};
     state_space::SE3 temp_SE3 = _mount_configuration;
     for (auto it = _joint_configurations.begin(); it != _joint_configurations.end(); it++) {
@@ -42,7 +44,8 @@ state_space::vector_SE3 RobotModel::computeTransform() const {
     return result;
 }
 
-state_space::vector_SE3 RobotModel::computeTransform(const state_space::JointSpace& joint_angles) const {
+state_space::vector_SE3 RobotModel::computeTransform(const state_space::JointSpace& joint_angles) const
+{
     state_space::vector_SE3 result{};
     state_space::SE3 temp_SE3 = _mount_configuration;
     for (auto it = _joint_configurations.begin(); it != _joint_configurations.end(); it++) {
@@ -54,7 +57,8 @@ state_space::vector_SE3 RobotModel::computeTransform(const state_space::JointSpa
     return result;
 }
 
-std::vector<std::string> RobotModel::getLinkMeshPaths() const {
+std::vector<std::string> RobotModel::getLinkMeshPaths() const
+{
     std::vector<std::string> paths;
     auto iter = _link_mesh_path.begin();
     while (iter != _link_mesh_path.end()) {

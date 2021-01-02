@@ -5,7 +5,6 @@
 #include "StateSpace/JointSpace.hpp"
 #include "planner/Planner.hpp"
 #include "Kinematics/Kinematics.h"
-#include "RobotModel/joint_model.h"
 
 int main() {
     Eigen::Matrix<double, 7, 1> pose_with_quaternion;

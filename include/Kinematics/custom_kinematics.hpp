@@ -18,7 +18,8 @@ namespace kinematics {
  */
     IK_SINGULAR_CODE aubo_i5_analytical_IK(Eigen::MatrixXd& joint_solutions, const state_space::SE3& home_configuration,
                                            const state_space::SE_3& desired_pose,
-                                           const state_space::JointSpace* references_ptr) {
+                                           const state_space::JointSpace* references_ptr)
+    {
         const state_space::SE_3& a = desired_pose;
         state_space::R6 upper_bound;
         upper_bound.setConstant(3.05);
@@ -116,8 +117,7 @@ namespace kinematics {
                     //num_solutions++;
 
                     //if any angle is outside the bound range do not accept this solution
-                    state_space::JointSpace check_vector{};
-                    memcpy(check_vector.data(), solutions[num_solutions], 6 * sizeof(double));
+                    state_space::JointSpace check_vector(solutions[num_solutions],6);
                     if (check_vector.isValid(upper_bound, lower_bound))
                         num_solutions++;
 

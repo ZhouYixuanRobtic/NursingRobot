@@ -150,7 +150,8 @@ namespace collision_detection {
         void clear();
 
         /** @brief Get the size of the allowed collision matrix (number of specified entries) */
-        std::size_t getSize() const {
+        std::size_t getSize() const
+        {
             return entries_.size();
         }
 

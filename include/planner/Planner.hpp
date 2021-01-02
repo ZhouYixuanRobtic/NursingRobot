@@ -31,7 +31,8 @@ namespace planner {
      * @return hash function for state
      */
     template<typename T>
-    static size_t hash(T state) {
+    static size_t hash(T state)
+    {
         size_t seed = 0;
         for (int i = 0; i < state.Vector().size(); ++i) {
             boost::hash_combine(seed, state.Vector()[i]);
@@ -40,7 +41,8 @@ namespace planner {
     }
 
     template<typename T>
-    static T randomState(const Eigen::MatrixX2d* bounds_ptr, int dimensions = 0) {
+    static T randomState(const Eigen::MatrixX2d* bounds_ptr, int dimensions = 0)
+    {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
         if (bounds_ptr != nullptr && bounds_ptr->rows() != dimensions) {
@@ -58,7 +60,8 @@ namespace planner {
      */
     template<typename T>
     static T interpolate(const T& source, const T& target,
-                         double lambda) {
+                         double lambda)
+    {
         if (lambda > 1 || lambda < 0) {
             throw std::invalid_argument
                     ("only interpolate state with [source, target], please use 'extend' function \n");
@@ -72,7 +75,8 @@ namespace planner {
      * @return A state
      */
     template<typename T>
-    static T extend(const T& source, const T& target, double extend_length) {
+    static T extend(const T& source, const T& target, double extend_length)
+    {
         T extend_direction = target - source;
         extend_direction = extend_direction * (1 / extend_direction.norm());
         return source + (extend_direction * extend_length);
@@ -90,7 +94,8 @@ namespace planner {
      * and divided equally.
      */
     template<typename T>
-    static T bezierInterpolate(const T& source, const T& target, double lambda) {
+    static T bezierInterpolate(const T& source, const T& target, double lambda)
+    {
         T delta = target - source;
         T result;
         result = source * (1 * pow(lambda, 0) * pow((1 - lambda), 5 - 0)) +
@@ -111,7 +116,8 @@ namespace planner {
      * @return The distance between the states
      */
     template<typename T>
-    double distance(const T& from, const T& to) {
+    double distance(const T& from, const T& to)
+    {
         return from.distance(to);
     }
 
@@ -124,7 +130,8 @@ namespace planner {
      */
     //TODO: Not implemented
     template<typename T>
-    std::vector<std::array<T, 6>> getBezierControlPoints(const std::vector<T>& state_list) {
+    std::vector<std::array<T, 6>> getBezierControlPoints(const std::vector<T>& state_list)
+    {
         std::vector<std::array<T, 6>> control_points_list{};
         return control_points_list;
     }
@@ -136,7 +143,8 @@ namespace planner {
 
         explicit Vertex(const T& data, Vertex<T>* parent = nullptr, int dimensions = 6,
                         std::function<void(T, double*)> TToArray = NULL)
-                : _state(data), _parent(parent) {
+                : _state(data), _parent(parent)
+        {
             _vec.resize(dimensions);
             if (_parent) {
                 _parent->_children.push_back(this);
@@ -148,9 +156,11 @@ namespace planner {
             }
         };
 
-        const Vertex<T>* parent() const { return _parent; };
+        const Vertex<T>* parent() const
+        { return _parent; };
 
-        int depth() const {
+        int depth() const
+        {
             int n = 0;
             Vertex<T>* ancestor = _parent;
             while (ancestor != nullptr) {
@@ -160,9 +170,11 @@ namespace planner {
             return n;
         };
 
-        const T& state() const { return _state; };
+        const T& state() const
+        { return _state; };
 
-        double* data() const { return const_cast<double*>(_vec.data()); };
+        double* data() const
+        { return const_cast<double*>(_vec.data()); };
     private:
         std::vector<double> _vec;
         T _state;

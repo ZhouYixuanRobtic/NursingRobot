@@ -68,7 +68,8 @@
  * \return Whether the given transform is close to an isometry or not.
  */
 inline bool checkIsometry(const Eigen::Isometry3d& transform, const double precision = CHECK_ISOMETRY_PRECISION,
-                          const bool printError = true) {
+                          const bool printError = true)
+{
     if (!transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(), precision)) {
         if (printError) {
             std::cerr << "The given transform is not an isometry! Its last row deviates from [0 0 0 1] by ["

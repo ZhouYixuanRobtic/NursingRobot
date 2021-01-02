@@ -55,26 +55,32 @@ namespace robot_model {
         ~RobotModel() = default;
 
         /**@brief set current joint angles*/
-        void setCurrentJointAngles(const state_space::JointSpace& joint_angles) {
+        void setCurrentJointAngles(const state_space::JointSpace& joint_angles)
+        {
             _current_joint_angles = joint_angles;
         }
 
         /**@brief get stored current joint angles*/
-        state_space::JointSpace getCurrentJointAngles() const {
+        state_space::JointSpace getCurrentJointAngles() const
+        {
             return _current_joint_angles;
         }
 
         /**@brief set end effector configuration*/
-        void setEndEffector(const state_space::SE3& ee_configuration) { _ee_configuration = ee_configuration; };
+        void setEndEffector(const state_space::SE3& ee_configuration)
+        { _ee_configuration = ee_configuration; };
 
         /**@brief get stored end effector configuration*/
-        state_space::SE3 getEndEffector() const { return _ee_configuration; };
+        state_space::SE3 getEndEffector() const
+        { return _ee_configuration; };
 
         /**@brief set mount configuration*/
-        void setMount(const state_space::SE3& mount_configuration) { _mount_configuration = mount_configuration; };
+        void setMount(const state_space::SE3& mount_configuration)
+        { _mount_configuration = mount_configuration; };
 
         /**@brief get stored mount configuration*/
-        state_space::SE3 getMount() const { return _mount_configuration; };
+        state_space::SE3 getMount() const
+        { return _mount_configuration; };
 
         /**@brief get stored mesh path of every link*/
         std::vector<std::string> getLinkMeshPaths() const;

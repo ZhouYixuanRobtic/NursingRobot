@@ -7,7 +7,8 @@
 #include "StateSpace/SE3.hpp"
 #include "planner/Planner.hpp"
 
-int main() {
+int main()
+{
 
     state_space::SO_3 B;
     B << 1, 2, 3, 4, 5, 6, 7, 7, 9;

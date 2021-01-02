@@ -76,29 +76,35 @@ namespace robot_model {
         ~LinkModel();
 
         /** \brief The name of this link */
-        const std::string& getName() const {
+        const std::string& getName() const
+        {
             return name_;
         }
 
         /** \brief The index of this joint when traversing the kinematic tree in depth first fashion */
-        int getLinkIndex() const {
+        int getLinkIndex() const
+        {
             return link_index_;
         }
 
-        void setLinkIndex(int index) {
+        void setLinkIndex(int index)
+        {
             link_index_ = index;
         }
 
-        int getFirstCollisionBodyTransformIndex() const {
+        int getFirstCollisionBodyTransformIndex() const
+        {
             return first_collision_body_transform_index_;
         }
 
-        void setFirstCollisionBodyTransformIndex(int index) {
+        void setFirstCollisionBodyTransformIndex(int index)
+        {
             first_collision_body_transform_index_ = index;
         }
 
         /** \brief Get the joint model whose child this link is. There will always be a parent joint */
-        const JointModel* getParentJointModel() const {
+        const JointModel* getParentJointModel() const
+        {
             return parent_joint_model_;
         }
 
@@ -106,20 +112,24 @@ namespace robot_model {
 
         /** \brief Get the link model whose child this link is (through some joint). There may not always be a parent link
          * (NULL is returned for the root link) */
-        const LinkModel* getParentLinkModel() const {
+        const LinkModel* getParentLinkModel() const
+        {
             return parent_link_model_;
         }
 
-        void setParentLinkModel(const LinkModel* link) {
+        void setParentLinkModel(const LinkModel* link)
+        {
             parent_link_model_ = link;
         }
 
         /** \brief A link may have 0 or more child joints. From those joints there will certainly be other descendant links */
-        const std::vector<const JointModel*>& getChildJointModels() const {
+        const std::vector<const JointModel*>& getChildJointModels() const
+        {
             return child_joint_models_;
         }
 
-        void addChildJointModel(const JointModel* joint) {
+        void addChildJointModel(const JointModel* joint)
+        {
             child_joint_models_.push_back(joint);
         }
 
@@ -128,15 +138,18 @@ namespace robot_model {
             joint origin transform acts as an offset -- it is
             pre-applied before any other transform. The
             transform is guaranteed to be a valid isometry. */
-        const Eigen::Isometry3d& getJointOriginTransform() const {
+        const Eigen::Isometry3d& getJointOriginTransform() const
+        {
             return joint_origin_transform_;
         }
 
-        bool jointOriginTransformIsIdentity() const {
+        bool jointOriginTransformIsIdentity() const
+        {
             return joint_origin_transform_is_identity_;
         }
 
-        bool parentJointIsFixed() const {
+        bool parentJointIsFixed() const
+        {
             return is_parent_joint_fixed_;
         }
 
@@ -146,17 +159,20 @@ namespace robot_model {
             of a link that is used for collision checking may have
             a different offset itself, with respect to the origin.
             The transform is guaranteed to be a valid isometry. */
-        const EigenSTL::vector_Isometry3d& getCollisionOriginTransforms() const {
+        const EigenSTL::vector_Isometry3d& getCollisionOriginTransforms() const
+        {
             return collision_origin_transform_;
         }
 
         /** \brief Return flags for each transform specifying whether they are identity or not */
-        const std::vector<int>& areCollisionOriginTransformsIdentity() const {
+        const std::vector<int>& areCollisionOriginTransformsIdentity() const
+        {
             return collision_origin_transform_is_identity_;
         }
 
         /** \brief Get shape associated to the collision geometry for this link */
-        const std::vector<shapes::ShapeConstPtr>& getShapes() const {
+        const std::vector<shapes::ShapeConstPtr>& getShapes() const
+        {
             return shapes_;
         }
 
@@ -165,39 +181,46 @@ namespace robot_model {
         /** \brief Get the extents of the link's geometry (dimensions of axis-aligned bounding box around all shapes that make
            up the
             link, when the link is positioned at origin -- only collision origin transforms are considered) */
-        const Eigen::Vector3d& getShapeExtentsAtOrigin() const {
+        const Eigen::Vector3d& getShapeExtentsAtOrigin() const
+        {
             return shape_extents_;
         }
 
         /** \brief Get the offset of the center of the bounding box of this link when the link is positioned at origin. */
-        const Eigen::Vector3d& getCenteredBoundingBoxOffset() const {
+        const Eigen::Vector3d& getCenteredBoundingBoxOffset() const
+        {
             return centered_bounding_box_offset_;
         }
 
         /** \brief Get the set of links that are attached to this one via fixed transforms. The returned transforms are
          * guaranteed to be valid isometries. */
-        const LinkTransformMap& getAssociatedFixedTransforms() const {
+        const LinkTransformMap& getAssociatedFixedTransforms() const
+        {
             return associated_fixed_transforms_;
         }
 
         /** \brief Remember that \e link_model is attached to this link using a fixed transform */
-        void addAssociatedFixedTransform(const LinkModel* link_model, const Eigen::Isometry3d& transform) {
+        void addAssociatedFixedTransform(const LinkModel* link_model, const Eigen::Isometry3d& transform)
+        {
             ASSERT_ISOMETRY(transform);  // unsanitized input, could contain a non-isometry
             associated_fixed_transforms_[link_model] = transform;
         }
 
         /** \brief Get the filename of the mesh resource used for visual display of this link */
-        const std::string& getVisualMeshFilename() const {
+        const std::string& getVisualMeshFilename() const
+        {
             return visual_mesh_filename_;
         }
 
         /** \brief Get the scale of the mesh resource for this link */
-        const Eigen::Vector3d& getVisualMeshScale() const {
+        const Eigen::Vector3d& getVisualMeshScale() const
+        {
             return visual_mesh_scale_;
         }
 
         /** \brief Get the transform for the visual mesh origin */
-        const Eigen::Isometry3d& getVisualMeshOrigin() const {
+        const Eigen::Isometry3d& getVisualMeshOrigin() const
+        {
             return visual_mesh_origin_;
         }
 
