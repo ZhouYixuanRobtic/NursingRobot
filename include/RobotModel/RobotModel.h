@@ -12,11 +12,13 @@
 #include <utility>
 #include <yaml-cpp/yaml.h>
 #include "macros/class_forward.h"
-namespace robot_model{
+
+namespace robot_model {
 
 
     MOVEIT_CLASS_FORWARD(RobotModel);
-    DECLARE_SEQUENTIAL_CONTAINER(RobotModel,RobotModel);
+    DECLARE_SEQUENTIAL_CONTAINER(RobotModel, RobotModel);
+
     /**
      * @brief computes transform of every link
      * @note only supports revolute joint
@@ -43,32 +45,36 @@ namespace robot_model{
         state_space::JointSpace _current_joint_angles;
 
         /**@brief stored path of every link*/
-        std::map<std::string,std::string> _link_mesh_path;
+        std::map<std::string, std::string> _link_mesh_path;
 
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        explicit RobotModel(std::string model_config,const state_space::JointSpace& joint_angles);
+
+        explicit RobotModel(std::string model_config, const state_space::JointSpace& joint_angles);
 
         ~RobotModel() = default;
 
         /**@brief set current joint angles*/
-        void setCurrentJointAngles(const state_space::JointSpace& joint_angles){
+        void setCurrentJointAngles(const state_space::JointSpace& joint_angles) {
             _current_joint_angles = joint_angles;
         }
+
         /**@brief get stored current joint angles*/
-        state_space::JointSpace getCurrentJointAngles()const{
+        state_space::JointSpace getCurrentJointAngles() const {
             return _current_joint_angles;
         }
 
         /**@brief set end effector configuration*/
-        void setEndEffector(const state_space::SE3 & ee_configuration){ _ee_configuration = ee_configuration;};
+        void setEndEffector(const state_space::SE3& ee_configuration) { _ee_configuration = ee_configuration; };
+
         /**@brief get stored end effector configuration*/
-        state_space::SE3 getEndEffector() const{return _ee_configuration;};
+        state_space::SE3 getEndEffector() const { return _ee_configuration; };
 
         /**@brief set mount configuration*/
-        void setMount(const state_space::SE3 & mount_configuration){ _mount_configuration = mount_configuration;};
+        void setMount(const state_space::SE3& mount_configuration) { _mount_configuration = mount_configuration; };
+
         /**@brief get stored mount configuration*/
-        state_space::SE3 getMount() const{return _mount_configuration;};
+        state_space::SE3 getMount() const { return _mount_configuration; };
 
         /**@brief get stored mesh path of every link*/
         std::vector<std::string> getLinkMeshPaths() const;
@@ -81,7 +87,6 @@ namespace robot_model{
 
     };
 }
-
 
 
 #endif //NURSINGROBOT_ROBOTMODEL_H

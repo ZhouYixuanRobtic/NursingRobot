@@ -1,15 +1,17 @@
 
 #ifndef NURSINGROBOT_STATESPACE_HPP
 #define NURSINGROBOT_STATESPACE_HPP
+
 #include <vector>
 #include <array>
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 #include "macros/class_forward.h"
-namespace state_space{
+
+namespace state_space {
     //exponential coordinate of se(3) s = [w,v]
-    typedef Eigen::Matrix<double,6,1> R6;
+    typedef Eigen::Matrix<double, 6, 1> R6;
 
     //lie algebra se(3) of the lie group SE(3)
     typedef Eigen::Matrix4d se_3;
@@ -27,48 +29,54 @@ namespace state_space{
     typedef Eigen::Matrix3d SO_3;
 
     //adjoint matrix 6X6 for Lie bracket
-    typedef Eigen::Matrix<double,6,6> adjoint_mat;
+    typedef Eigen::Matrix<double, 6, 6> adjoint_mat;
 
-    typedef Eigen::Matrix<double,6,6> jacobian_mat;
+    typedef Eigen::Matrix<double, 6, 6> jacobian_mat;
 
 
-    static bool NearZero(const double val)
-    {
-        return (std::abs(val)<1e-8);
+    static bool NearZero(const double val) {
+        return (std::abs(val) < 1e-8);
     }
+
     /**
     * A state space represents the set of possible states for a planning problem.
     * for example Rn SO2 SO3 SE3 SE3
     * This class is abstract and must be subclassed in order to provide actual
     * functionality.
     */
-    template <typename T>
-    class StateSpace{
+    template<typename T>
+    class StateSpace {
     public:
         StateSpace() = default;
+
         virtual ~StateSpace() = default;
 
         //
-        virtual T operator+(const T & input) const =0;
-        virtual T operator-(const T & input) const =0;
-        virtual T operator*(double s)  const =0;
-        virtual T operator()(double theta)  const =0;
-        virtual bool operator==(const T& other) const =0;
+        virtual T operator+(const T& input) const = 0;
 
-        virtual T inverse() const =0;
-        virtual T random(std::default_random_engine & randomEngine,const Eigen::MatrixX2d* bounds_ptr) const =0;
-        virtual double distance(const T & to) const =0;
-        virtual double norm()const=0;
-        virtual double* data()=0;
+        virtual T operator-(const T& input) const = 0;
 
-        virtual int Dimensions() const =0;
+        virtual T operator*(double s) const = 0;
+
+        virtual T operator()(double theta) const = 0;
+
+        virtual bool operator==(const T& other) const = 0;
+
+        virtual T inverse() const = 0;
+
+        virtual T random(std::default_random_engine& randomEngine, const Eigen::MatrixX2d* bounds_ptr) const = 0;
+
+        virtual double distance(const T& to) const = 0;
+
+        virtual double norm() const = 0;
+
+        virtual const double* data() const = 0;
+
+        virtual int Dimensions() const = 0;
     };
 
 
-
-
 }
-
 
 
 #endif //NURSINGROBOT_STATESPACE_HPP

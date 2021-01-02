@@ -4,13 +4,10 @@
 /**
  * @note: this is copied from moveit.
  */
-namespace collision_detection
-{
+namespace collision_detection {
     /** \brief Any pair of bodies can have a collision state associated to it */
-    namespace AllowedCollision
-    {
-        enum Type
-        {
+    namespace AllowedCollision {
+        enum Type {
             /** \brief Collisions between the pair of bodies is never ok, i.e., if two bodies are in contact in
                 a particular configuration of the robot, that configuration is considered to be in collision*/
             NEVER,
@@ -35,8 +32,7 @@ namespace collision_detection
  *  @brief Definition of a structure for the allowed collision matrix. All elements in the collision world are referred
  * to by their names.
  *   This class represents which collisions are allowed to happen and which are not. */
-    class AllowedCollisionMatrix
-    {
+    class AllowedCollisionMatrix {
     public:
         AllowedCollisionMatrix();
 
@@ -44,7 +40,7 @@ namespace collision_detection
          *  @param names a vector of names (corresponding to object IDs in the collision world).
          *  @param allowed If false, indicates that collisions between all elements must be checked for and no collisions
          *  will be ignored. */
-        AllowedCollisionMatrix(const std::vector<std::string>& names, bool allowed = false);
+        AllowedCollisionMatrix(const std::vector <std::string>& names, bool allowed = false);
 
         /** @brief Construct the structure from a message representation */
         AllowedCollisionMatrix(const moveit_msgs::AllowedCollisionMatrix& msg);
@@ -126,7 +122,7 @@ namespace collision_detection
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::string& name, const std::vector<std::string>& other_names, bool allowed);
+        void setEntry(const std::string& name, const std::vector <std::string>& other_names, bool allowed);
 
         /** @brief Set an entry corresponding to all possible pairs between two sets of elements
          *  @param names1 First set of names
@@ -135,7 +131,7 @@ namespace collision_detection
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::vector<std::string>& names1, const std::vector<std::string>& names2, bool allowed);
+        void setEntry(const std::vector <std::string>& names1, const std::vector <std::string>& names2, bool allowed);
 
         /** @brief Set an entry corresponding to all known pairs
          *  @param allowed If false, indicates that collisions between two elements must be checked for and no collisions
@@ -145,7 +141,7 @@ namespace collision_detection
         void setEntry(bool allowed);
 
         /** @brief Get all the names known to the collision matrix */
-        void getAllEntryNames(std::vector<std::string>& names) const;
+        void getAllEntryNames(std::vector <std::string>& names) const;
 
         /** @brief Get the allowed collision matrix as a message */
         void getMessage(moveit_msgs::AllowedCollisionMatrix& msg) const;
@@ -154,8 +150,7 @@ namespace collision_detection
         void clear();
 
         /** @brief Get the size of the allowed collision matrix (number of specified entries) */
-        std::size_t getSize() const
-        {
+        std::size_t getSize() const {
             return entries_.size();
         }
 
@@ -228,11 +223,11 @@ namespace collision_detection
         void print(std::ostream& out) const;
 
     private:
-        std::map<std::string, std::map<std::string, AllowedCollision::Type> > entries_;
-        std::map<std::string, std::map<std::string, DecideContactFn> > allowed_contacts_;
+        std::map <std::string, std::map<std::string, AllowedCollision::Type>> entries_;
+        std::map <std::string, std::map<std::string, DecideContactFn>> allowed_contacts_;
 
-        std::map<std::string, AllowedCollision::Type> default_entries_;
-        std::map<std::string, DecideContactFn> default_allowed_contacts_;
+        std::map <std::string, AllowedCollision::Type> default_entries_;
+        std::map <std::string, DecideContactFn> default_allowed_contacts_;
     };
 }  // namespace collision_detection
 

@@ -68,12 +68,9 @@
  * \return Whether the given transform is close to an isometry or not.
  */
 inline bool checkIsometry(const Eigen::Isometry3d& transform, const double precision = CHECK_ISOMETRY_PRECISION,
-                          const bool printError = true)
-{
-    if (!transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(), precision))
-    {
-        if (printError)
-        {
+                          const bool printError = true) {
+    if (!transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(), precision)) {
+        if (printError) {
             std::cerr << "The given transform is not an isometry! Its last row deviates from [0 0 0 1] by ["
                       << (transform.matrix().row(3) - Eigen::Vector4d::UnitW().transpose())
                       << "] but the required precision is " << precision << "." << std::endl;
@@ -82,15 +79,14 @@ inline bool checkIsometry(const Eigen::Isometry3d& transform, const double preci
     }
 
     Eigen::Isometry3d::LinearMatrixType scale;
-    transform.computeRotationScaling((Eigen::Isometry3d::LinearMatrixType*)nullptr, &scale);
-    if (!scale.isApprox(Eigen::Matrix3d::Identity(), precision))
-    {
-        if (printError)
-        {
-            std::cerr << "The given transform is not an isometry! Its linear part involves non-unit scaling. The scaling "
-                         "matrix diagonal differs from [1 1 1] by ["
-                      << (scale.diagonal().transpose() - Eigen::Vector3d::Ones().transpose())
-                      << "] but the required precision is " << precision << "." << std::endl;
+    transform.computeRotationScaling((Eigen::Isometry3d::LinearMatrixType*) nullptr, &scale);
+    if (!scale.isApprox(Eigen::Matrix3d::Identity(), precision)) {
+        if (printError) {
+            std::cerr
+                    << "The given transform is not an isometry! Its linear part involves non-unit scaling. The scaling "
+                       "matrix diagonal differs from [1 1 1] by ["
+                    << (scale.diagonal().transpose() - Eigen::Vector3d::Ones().transpose())
+                    << "] but the required precision is " << precision << "." << std::endl;
         }
         return false;
     }

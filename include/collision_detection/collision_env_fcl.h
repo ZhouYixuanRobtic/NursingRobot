@@ -4,7 +4,8 @@
 #include <fcl/broadphase/broadphase_collision_manager.h>
 #include <memory>
 #include "collision_detection/collision_common.h"
-namespace collision_detection{
+
+namespace collision_detection {
 
 }
 

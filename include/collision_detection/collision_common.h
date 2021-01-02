@@ -47,15 +47,14 @@
 #include "macros/class_forward.h"
 #include "RobotModel/RobotModel.h"
 #include "util/check_isometry.h"
-namespace collision_detection{
+
+namespace collision_detection {
     MOVEIT_CLASS_FORWARD(AllowedCollisionMatrix);  // Defines AllowedCollisionMatrixPtr, ConstPtr, WeakPtr... etc
 
 /** \brief The types of bodies that are considered for collision */
-    namespace BodyTypes
-    {
+    namespace BodyTypes {
 /** \brief The types of bodies that are considered for collision */
-        enum Type
-        {
+        enum Type {
             /** \brief A link on the robot */
             ROBOT_LINK,
 
@@ -71,8 +70,7 @@ namespace collision_detection{
     using BodyType = BodyTypes::Type;
 
 /** \brief Definition of a contact point */
-    struct Contact
-    {
+    struct Contact {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         /** \brief contact position */
@@ -108,8 +106,7 @@ namespace collision_detection{
 
 /** \brief When collision costs are computed, this structure contains information about the partial cost incurred in a
  * particular volume */
-    struct CostSource
-    {
+    struct CostSource {
         /// The minimum bound of the AABB defining the volume responsible for this partial cost
         boost::array<double, 3> aabb_min;
 
@@ -120,14 +117,12 @@ namespace collision_detection{
         double cost;
 
         /// Get the volume of the AABB around the cost source
-        double getVolume() const
-        {
+        double getVolume() const {
             return (aabb_max[0] - aabb_min[0]) * (aabb_max[1] - aabb_min[1]) * (aabb_max[2] - aabb_min[2]);
         }
 
         /// Order cost sources so that the most costly source is at the top
-        bool operator<(const CostSource& other) const
-        {
+        bool operator<(const CostSource& other) const {
             double c1 = cost * getVolume();
             double c2 = other.cost * other.getVolume();
             if (c1 > c2)
@@ -143,18 +138,16 @@ namespace collision_detection{
     };
 
 /** \brief Representation of a collision checking result */
-    struct CollisionResult
-    {
-        CollisionResult() : collision(false), distance(std::numeric_limits<double>::max()), contact_count(0)
-        {
+    struct CollisionResult {
+        CollisionResult() : collision(false), distance(std::numeric_limits<double>::max()), contact_count(0) {
         }
+
         using ContactMap = std::map<std::pair<std::string, std::string>, std::vector<Contact> >;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         /** \brief Clear a previously stored result */
-        void clear()
-        {
+        void clear() {
             collision = false;
             distance = std::numeric_limits<double>::max();
             contact_count = 0;
@@ -182,20 +175,13 @@ namespace collision_detection{
     };
 
 /** \brief Representation of a collision checking request */
-    struct CollisionRequest
-    {
+    struct CollisionRequest {
         CollisionRequest()
-                : distance(false)
-                , cost(false)
-                , contacts(false)
-                , max_contacts(1)
-                , max_contacts_per_pair(1)
-                , max_cost_sources(1)
-                , verbose(false)
-        {
+                : distance(false), cost(false), contacts(false), max_contacts(1), max_contacts_per_pair(1),
+                  max_cost_sources(1), verbose(false) {
         }
-        virtual ~CollisionRequest()
-        {
+
+        virtual ~CollisionRequest() {
         }
 
         /** \brief The group name to check collisions for (optional; if empty, assume the complete robot) */
@@ -227,10 +213,8 @@ namespace collision_detection{
         bool verbose;
     };
 
-    namespace DistanceRequestTypes
-    {
-        enum DistanceRequestType
-        {
+    namespace DistanceRequestTypes {
+        enum DistanceRequestType {
             GLOBAL,   ///< Find the global minimum
             SINGLE,   ///< Find the global minimum for each pair
             LIMITED,  ///< Find a limited(max_contacts_per_body) set of contacts for a given pair
@@ -240,24 +224,15 @@ namespace collision_detection{
     using DistanceRequestType = DistanceRequestTypes::DistanceRequestType;
 
 /** \brief Representation of a distance-reporting request */
-    struct DistanceRequest
-    {
+    struct DistanceRequest {
         DistanceRequest()
-                : enable_nearest_points(false)
-                , enable_signed_distance(false)
-                , type(DistanceRequestType::GLOBAL)
-                , max_contacts_per_body(1)
-                , active_components_only(nullptr)
-                , acm(nullptr)
-                , distance_threshold(std::numeric_limits<double>::max())
-                , verbose(false)
-                , compute_gradient(false)
-        {
+                : enable_nearest_points(false), enable_signed_distance(false), type(DistanceRequestType::GLOBAL),
+                  max_contacts_per_body(1), active_components_only(nullptr), acm(nullptr),
+                  distance_threshold(std::numeric_limits<double>::max()), verbose(false), compute_gradient(false) {
         }
 
         /// Compute \e active_components_only_ based on \e req_
-        void enableGroup(const robot_model::RobotModelConstPtr& robot_model)
-        {
+        void enableGroup(const robot_model::RobotModelConstPtr& robot_model) {
             if (robot_model->hasJointModelGroup(group_name))
                 active_components_only = &robot_model->getJointModelGroup(group_name)->getUpdatedLinkModelsSet();
             else
@@ -302,8 +277,7 @@ namespace collision_detection{
 /** \brief Generic representation of the distance information for a pair of objects */
     struct DistanceResultsData  // NOLINT(readability-identifier-naming) - suppress spurious clang-tidy warning
     {
-        DistanceResultsData()
-        {
+        DistanceResultsData() {
             clear();
         }
 
@@ -327,8 +301,7 @@ namespace collision_detection{
         Eigen::Vector3d normal;
 
         /// Clear structure data
-        void clear()
-        {
+        void clear() {
             distance = std::numeric_limits<double>::max();
             nearest_points[0].setZero();
             nearest_points[1].setZero();
@@ -340,14 +313,12 @@ namespace collision_detection{
         }
 
         /// Compare if the distance is less than another
-        bool operator<(const DistanceResultsData& other)
-        {
+        bool operator<(const DistanceResultsData& other) {
             return (distance < other.distance);
         }
 
         /// Compare if the distance is greater than another
-        bool operator>(const DistanceResultsData& other)
-        {
+        bool operator>(const DistanceResultsData& other) {
             return (distance > other.distance);
         }
     };
@@ -356,10 +327,8 @@ namespace collision_detection{
     using DistanceMap = std::map<const std::pair<std::string, std::string>, std::vector<DistanceResultsData> >;
 
 /** \brief Result of a distance request. */
-    struct DistanceResult
-    {
-        DistanceResult() : collision(false)
-        {
+    struct DistanceResult {
+        DistanceResult() : collision(false) {
         }
 
         /// Indicates if two objects were in collision
@@ -372,15 +341,13 @@ namespace collision_detection{
         DistanceMap distances;
 
         /// Clear structure data
-        void clear()
-        {
+        void clear() {
             collision = false;
             minimum_distance.clear();
             distances.clear();
         }
     };
 }
-
 
 
 #endif //NURSINGROBOT_COLLISION_COMMON_H

@@ -38,33 +38,27 @@
 /* Modified by Yixuan Zhou */
 #ifndef NURSINGROBOT_JOINT_MODEL_H
 #define NURSINGROBOT_JOINT_MODEL_H
+
 #include <string>
 #include <vector>
 #include <map>
 #include <iostream>
 #include <random_numbers/random_numbers.h>
 #include <Eigen/Geometry>
-namespace robot_model{
 
-    struct VariableBounds
-    {
+namespace robot_model {
+
+    struct VariableBounds {
         VariableBounds()
-                : min_position_(0.0)
-                , max_position_(0.0)
-                , position_bounded_(false)
-                , min_velocity_(0.0)
-                , max_velocity_(0.0)
-                , velocity_bounded_(false)
-                , min_acceleration_(0.0)
-                , max_acceleration_(0.0)
-                , acceleration_bounded_(false)
-        {
-            data_<< max_position_,min_position_,
-                    max_velocity_,min_velocity_,
-                    max_acceleration_,min_acceleration_;
+                : min_position_(0.0), max_position_(0.0), position_bounded_(false), min_velocity_(0.0),
+                  max_velocity_(0.0), velocity_bounded_(false), min_acceleration_(0.0), max_acceleration_(0.0),
+                  acceleration_bounded_(false) {
+            data_ << max_position_, min_position_,
+                    max_velocity_, min_velocity_,
+                    max_acceleration_, min_acceleration_;
         }
 
-        Eigen::Matrix<double,3,2> data_;
+        Eigen::Matrix<double, 3, 2> data_;
         double min_position_;
         double max_position_;
         bool position_bounded_;
@@ -80,6 +74,7 @@ namespace robot_model{
     };
 
     class LinkModel;
+
     class JointModel;
 
     /** \brief Data type for holding mappings from variable names to their position in a state vector */
@@ -110,8 +105,7 @@ namespace robot_model{
     public:
         /** \brief The different types of joints we support */
         /** \note For simplify, here we only takes fixed and revolute joint*/
-        enum JointType
-        {
+        enum JointType {
             UNKNOWN,
             REVOLUTE,
             FIXED
@@ -126,14 +120,12 @@ namespace robot_model{
         virtual ~JointModel();
 
         /** \brief Get the name of the joint */
-        const std::string& getName() const
-        {
+        const std::string& getName() const {
             return name_;
         }
 
         /** \brief Get the type of joint */
-        JointType getType() const
-        {
+        JointType getType() const {
             return type_;
         }
 
@@ -143,24 +135,20 @@ namespace robot_model{
         /** \brief Get the link that this joint connects to. The
             robot is assumed to start with a joint, so the root
             joint will return a NULL pointer here. */
-        const LinkModel* getParentLinkModel() const
-        {
+        const LinkModel* getParentLinkModel() const {
             return parent_link_model_;
         }
 
         /** \brief Get the link that this joint connects to. There will always be such a link */
-        const LinkModel* getChildLinkModel() const
-        {
+        const LinkModel* getChildLinkModel() const {
             return child_link_model_;
         }
 
-        void setParentLinkModel(const LinkModel* link)
-        {
+        void setParentLinkModel(const LinkModel* link) {
             parent_link_model_ = link;
         }
 
-        void setChildLinkModel(const LinkModel* link)
-        {
+        void setChildLinkModel(const LinkModel* link) {
             child_link_model_ = link;
         }
 
@@ -171,52 +159,44 @@ namespace robot_model{
             For single DOF joints, this will be just the joint name. For multi-DOF joints these will be the joint name
            followed by "/", followed by
             the local names of the variables */
-        const std::vector<std::string>& getVariableNames() const
-        {
+        const std::vector<std::string>& getVariableNames() const {
             return variable_names_;
         }
 
         /** \brief Get the local names of the variable that make up the joint (suffixes that are attached to joint names to
            construct the variable names).
             For single DOF joints, this will be empty. */
-        const std::vector<std::string>& getLocalVariableNames() const
-        {
+        const std::vector<std::string>& getLocalVariableNames() const {
             return local_variable_names_;
         }
 
         /** \brief Check if a particular variable is known to this joint */
-        bool hasVariable(const std::string& variable) const
-        {
+        bool hasVariable(const std::string& variable) const {
             return variable_index_map_.find(variable) != variable_index_map_.end();
         }
 
         /** \brief Get the number of variables that describe this joint */
-        std::size_t getVariableCount() const
-        {
+        std::size_t getVariableCount() const {
             return variable_names_.size();
         }
 
         /** \brief Get the index of this joint's first variable within the full robot state */
-        int getFirstVariableIndex() const
-        {
+        int getFirstVariableIndex() const {
             return first_variable_index_;
         }
 
         /** \brief Set the index of this joint's first variable within the full robot state */
-        void setFirstVariableIndex(int index)
-        {
+        void setFirstVariableIndex(int index) {
             first_variable_index_ = index;
         }
 
         /** \brief Get the index of this joint within the robot model */
-        int getJointIndex() const
-        {
+        int getJointIndex() const {
             return joint_index_;
         }
 
         /** \brief Set the index of this joint within the robot model */
-        void setJointIndex(int index)
-        {
+        void setJointIndex(int index) {
             joint_index_ = index;
         }
 
@@ -230,8 +210,7 @@ namespace robot_model{
         /** \brief Provide a default value for the joint given the default joint variable bounds (maintained internally).
             Most joints will use the default implementation provided in this base class, but the quaternion
             for example needs a different implementation. Enough memory is assumed to be allocated. */
-        void getVariableDefaultPositions(double* values) const
-        {
+        void getVariableDefaultPositions(double* values) const {
             getVariableDefaultPositions(values, variable_bounds_);
         }
 
@@ -242,8 +221,7 @@ namespace robot_model{
 
         /** \brief Provide random values for the joint variables (within default bounds). Enough memory is assumed to be
          * allocated. */
-        void getVariableRandomPositions(random_numbers::RandomNumberGenerator& rng, double* values) const
-        {
+        void getVariableRandomPositions(random_numbers::RandomNumberGenerator& rng, double* values) const {
             getVariableRandomPositions(rng, values, variable_bounds_);
         }
 
@@ -254,9 +232,9 @@ namespace robot_model{
 
         /** \brief Provide random values for the joint variables (within default bounds). Enough memory is assumed to be
          * allocated. */
-        void getVariableRandomPositionsNearBy(random_numbers::RandomNumberGenerator& rng, double* values, const double* near,
-                                              const double distance) const
-        {
+        void
+        getVariableRandomPositionsNearBy(random_numbers::RandomNumberGenerator& rng, double* values, const double* near,
+                                         const double distance) const {
             getVariableRandomPositionsNearBy(rng, values, variable_bounds_, near, distance);
         }
 
@@ -272,8 +250,7 @@ namespace robot_model{
             @{ */
 
         /** \brief Check if the set of values for the variables of this joint are within bounds. */
-        bool satisfiesPositionBounds(const double* values, double margin = 0.0) const
-        {
+        bool satisfiesPositionBounds(const double* values, double margin = 0.0) const {
             return satisfiesPositionBounds(values, variable_bounds_, margin);
         }
 
@@ -284,8 +261,7 @@ namespace robot_model{
         /** \brief Force the specified values to be inside bounds and normalized. Quaternions are normalized, continuous
            joints are made between -Pi and Pi.
             Returns true if changes were made. */
-        bool enforcePositionBounds(double* values) const
-        {
+        bool enforcePositionBounds(double* values) const {
             return enforcePositionBounds(values, variable_bounds_);
         }
 
@@ -297,14 +273,13 @@ namespace robot_model{
         /** Harmonize position of revolute joints, adding/subtracting multiples of 2*Pi to bring them back into bounds.
          *  Return true if changes were made. */
         virtual bool harmonizePosition(double* values, const Bounds& other_bounds) const;
-        bool harmonizePosition(double* values) const
-        {
+
+        bool harmonizePosition(double* values) const {
             return harmonizePosition(values, variable_bounds_);
         }
 
         /** \brief Check if the set of velocities for the variables of this joint are within bounds. */
-        bool satisfiesVelocityBounds(const double* values, double margin = 0.0) const
-        {
+        bool satisfiesVelocityBounds(const double* values, double margin = 0.0) const {
             return satisfiesVelocityBounds(values, variable_bounds_, margin);
         }
 
@@ -312,8 +287,7 @@ namespace robot_model{
         virtual bool satisfiesVelocityBounds(const double* values, const Bounds& other_bounds, double margin) const;
 
         /** \brief Force the specified velocities to be within bounds. Return true if changes were made. */
-        bool enforceVelocityBounds(double* values) const
-        {
+        bool enforceVelocityBounds(double* values) const {
             return enforceVelocityBounds(values, variable_bounds_);
         }
 
@@ -324,8 +298,7 @@ namespace robot_model{
         const VariableBounds& getVariableBounds(const std::string& variable) const;
 
         /** \brief Get the variable bounds for this joint, in the same order as the names returned by getVariableNames() */
-        const Bounds& getVariableBounds() const
-        {
+        const Bounds& getVariableBounds() const {
             return variable_bounds_;
         }
 
@@ -340,15 +313,13 @@ namespace robot_model{
 
         /** \brief Get the factor that should be applied to the value returned by distance() when that value is used in
          * compound distances */
-        double getDistanceFactor() const
-        {
+        double getDistanceFactor() const {
             return distance_factor_;
         }
 
         /** \brief Set the factor that should be applied to the value returned by distance() when that value is used in
          * compound distances */
-        void setDistanceFactor(double factor)
-        {
+        void setDistanceFactor(double factor) {
             distance_factor_ = factor;
         }
 
@@ -356,20 +327,17 @@ namespace robot_model{
         virtual unsigned int getStateSpaceDimension() const = 0;
 
         /** \brief Get the joint this one is mimicking */
-        const JointModel* getMimic() const
-        {
+        const JointModel* getMimic() const {
             return mimic_;
         }
 
         /** \brief If mimicking a joint, this is the offset added to that joint's value */
-        double getMimicOffset() const
-        {
+        double getMimicOffset() const {
             return mimic_offset_;
         }
 
         /** \brief If mimicking a joint, this is the multiplicative factor for that joint's value */
-        double getMimicFactor() const
-        {
+        double getMimicFactor() const {
             return mimic_factor_;
         }
 
@@ -377,42 +345,38 @@ namespace robot_model{
         void setMimic(const JointModel* mimic, double factor, double offset);
 
         /** \brief The joint models whose values would be modified if the value of this joint changed */
-        const std::vector<const JointModel*>& getMimicRequests() const
-        {
+        const std::vector<const JointModel*>& getMimicRequests() const {
             return mimic_requests_;
         }
 
         /** \brief Notify this joint that there is another joint that mimics it */
         void addMimicRequest(const JointModel* joint);
+
         void addDescendantJointModel(const JointModel* joint);
+
         void addDescendantLinkModel(const LinkModel* link);
 
         /** \brief Get all the link models that descend from this joint, in the kinematic tree */
-        const std::vector<const LinkModel*>& getDescendantLinkModels() const
-        {
+        const std::vector<const LinkModel*>& getDescendantLinkModels() const {
             return descendant_link_models_;
         }
 
         /** \brief Get all the joint models that descend from this joint, in the kinematic tree */
-        const std::vector<const JointModel*>& getDescendantJointModels() const
-        {
+        const std::vector<const JointModel*>& getDescendantJointModels() const {
             return descendant_joint_models_;
         }
 
         /** \brief Get all the non-fixed joint models that descend from this joint, in the kinematic tree */
-        const std::vector<const JointModel*>& getNonFixedDescendantJointModels() const
-        {
+        const std::vector<const JointModel*>& getNonFixedDescendantJointModels() const {
             return non_fixed_descendant_joint_models_;
         }
 
         /** \brief Check if this joint is passive */
-        bool isPassive() const
-        {
+        bool isPassive() const {
             return passive_;
         }
 
-        void setPassive(bool flag)
-        {
+        void setPassive(bool flag) {
             passive_ = flag;
         }
 
@@ -425,8 +389,7 @@ namespace robot_model{
         /** \brief Get the extent of the state space (the maximum value distance() can ever report) */
         virtual double getMaximumExtent(const Bounds& other_bounds) const = 0;
 
-        double getMaximumExtent() const
-        {
+        double getMaximumExtent() const {
             return getMaximumExtent(variable_bounds_);
         }
 
@@ -503,10 +466,10 @@ namespace robot_model{
         /** \brief Index for this joint in the array of joints of the complete model */
         int joint_index_;
     };
+
     /** \brief Operator overload for printing variable bounds to a stream */
     std::ostream& operator<<(std::ostream& out, const VariableBounds& b);
 }
-
 
 
 #endif //NURSINGROBOT_JOINT_MODEL_H

@@ -43,6 +43,7 @@
 #include <queue>
 #include <stack>
 #include <forward_list>
+
 #define DECLARE_SEQUENTIAL_CONTAINER(Name, Type)                                                                       \
   typedef std::vector<Type,Eigen::aligned_allocator<Type>>  vector_##Name;                                             \
   typedef std::deque<Type,Eigen::aligned_allocator<Type>>   deque_##Name;                                              \

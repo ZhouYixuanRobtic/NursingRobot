@@ -4,6 +4,7 @@
 
 #ifndef NURSINGROBOT_PLANNER_HPP
 #define NURSINGROBOT_PLANNER_HPP
+
 #include <utility>
 
 #include "StateSpace/SE3.hpp"
@@ -21,33 +22,31 @@
 #include <cstdlib>
 #include <list>
 #include "boost/functional/hash.hpp"
-namespace planner{
+
+namespace planner {
     /**
      *
      * @tparam T
      * @param state
      * @return hash function for state
      */
-    template <typename T>
+    template<typename T>
     static size_t hash(T state) {
         size_t seed = 0;
-        for(int i=0; i<state.Vector().size();++i)
-        {
+        for (int i = 0; i < state.Vector().size(); ++i) {
             boost::hash_combine(seed, state.Vector()[i]);
         }
         return seed;
     }
 
-    template <typename T>
-    static T randomState(const Eigen::MatrixX2d * bounds_ptr, int dimensions = 0)
-    {
+    template<typename T>
+    static T randomState(const Eigen::MatrixX2d* bounds_ptr, int dimensions = 0) {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
-        if(bounds_ptr!= nullptr && bounds_ptr->rows()!=dimensions)
-        {
+        if (bounds_ptr != nullptr && bounds_ptr->rows() != dimensions) {
             throw std::invalid_argument("dimensions and bounds are not equal!");
         }
-        return dimensions==0 ? T().random(randomEngine,bounds_ptr): T(dimensions).random(randomEngine,bounds_ptr);
+        return dimensions == 0 ? T().random(randomEngine, bounds_ptr) : T(dimensions).random(randomEngine, bounds_ptr);
     }
 
     /**
@@ -57,16 +56,14 @@ namespace planner{
      *
      * @return A state in the direction of @target from @source (hyper linear interpolation)
      */
-    template <typename T>
+    template<typename T>
     static T interpolate(const T& source, const T& target,
-                         double lambda)
-    {
-        if(lambda >1||lambda<0)
-        {
+                         double lambda) {
+        if (lambda > 1 || lambda < 0) {
             throw std::invalid_argument
-            ("only interpolate state with [source, target], please use 'extend' function \n");
+                    ("only interpolate state with [source, target], please use 'extend' function \n");
         }
-        return source+(target-source)*lambda;
+        return source + (target - source) * lambda;
     }
 
     /**
@@ -75,11 +72,10 @@ namespace planner{
      * @return A state
      */
     template<typename T>
-    static T extend(const T& source, const T& target, double extend_length)
-    {
-        T extend_direction = target-source;
-        extend_direction = extend_direction*(1/extend_direction.norm());
-        return source+(extend_direction*extend_length);
+    static T extend(const T& source, const T& target, double extend_length) {
+        T extend_direction = target - source;
+        extend_direction = extend_direction * (1 / extend_direction.norm());
+        return source + (extend_direction * extend_length);
     }
 
     /**
@@ -93,17 +89,16 @@ namespace planner{
      * @return A state in the bezier curve of @target from @source.state(), the control points are fixed
      * and divided equally.
      */
-    template <typename T>
-    static T bezierInterpolate(const T& source, const T& target,double lambda)
-    {
+    template<typename T>
+    static T bezierInterpolate(const T& source, const T& target, double lambda) {
         T delta = target - source;
         T result;
-        result = source*(1*pow(lambda,0)*pow((1-lambda),5-0))+
-                 (source-delta*2)*(5*pow(lambda,1)*pow((1-lambda),5-1))+
-                 (source-delta)*(10*pow(lambda,2)*pow((1-lambda),5-2))+
-                 (source+delta*3)*(10*pow(lambda,3)*pow((1-lambda),5-3))+
-                 (source+delta*2)*(5*pow(lambda,4)*pow((1-lambda),5-4))+
-                 target*(1*pow(lambda,5)*pow((1-lambda),5-5));
+        result = source * (1 * pow(lambda, 0) * pow((1 - lambda), 5 - 0)) +
+                 (source - delta * 2) * (5 * pow(lambda, 1) * pow((1 - lambda), 5 - 1)) +
+                 (source - delta) * (10 * pow(lambda, 2) * pow((1 - lambda), 5 - 2)) +
+                 (source + delta * 3) * (10 * pow(lambda, 3) * pow((1 - lambda), 5 - 3)) +
+                 (source + delta * 2) * (5 * pow(lambda, 4) * pow((1 - lambda), 5 - 4)) +
+                 target * (1 * pow(lambda, 5) * pow((1 - lambda), 5 - 5));
         return result;
     }
 
@@ -115,9 +110,8 @@ namespace planner{
      *
      * @return The distance between the states
      */
-    template <typename T>
-    double distance(const T& from, const T& to)
-    {
+    template<typename T>
+    double distance(const T& from, const T& to) {
         return from.distance(to);
     }
 
@@ -129,50 +123,46 @@ namespace planner{
      * @return a vector contains all six control points for each segment.
      */
     //TODO: Not implemented
-    template <typename T>
-    std::vector<std::array<T,6>> getBezierControlPoints(const std::vector<T> & state_list)
-    {
-        std::vector<std::array<T,6>> control_points_list{};
+    template<typename T>
+    std::vector<std::array<T, 6>> getBezierControlPoints(const std::vector<T>& state_list) {
+        std::vector<std::array<T, 6>> control_points_list{};
         return control_points_list;
     }
 
-    template <typename T>
-    class Vertex{
+    template<typename T>
+    class Vertex {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        explicit Vertex(const T & data, Vertex<T>* parent = nullptr, int dimensions = 6, std::function<void(T,double*)>TToArray = NULL)
-                : _state(data), _parent(parent)
-                {
-                    _vec.resize(dimensions);
-                    if(_parent)
-                    {
-                        _parent->_children.push_back(this);
-                    }
-                    if(NULL == TToArray)
-                    {
-                        memcpy(_vec.data(),data.Vector().data(),dimensions*sizeof(double));
-                    }
-                    else
-                    {
-                        TToArray(data,_vec.data());
-                    }
-                };
-        const Vertex<T>* parent()const {return  _parent;};
 
-        int depth() const{
-            int n=0;
+        explicit Vertex(const T& data, Vertex<T>* parent = nullptr, int dimensions = 6,
+                        std::function<void(T, double*)> TToArray = NULL)
+                : _state(data), _parent(parent) {
+            _vec.resize(dimensions);
+            if (_parent) {
+                _parent->_children.push_back(this);
+            }
+            if (NULL == TToArray) {
+                memcpy(_vec.data(), data.data(), dimensions * sizeof(double));
+            } else {
+                TToArray(data, _vec.data());
+            }
+        };
+
+        const Vertex<T>* parent() const { return _parent; };
+
+        int depth() const {
+            int n = 0;
             Vertex<T>* ancestor = _parent;
-            while( ancestor != nullptr)
-            {
+            while (ancestor != nullptr) {
                 n++;
                 ancestor = ancestor->_parent;
             }
             return n;
         };
 
-        const T& state() const {return _state;};
+        const T& state() const { return _state; };
 
-        double* data()const {return const_cast<double *>(_vec.data());};
+        double* data() const { return const_cast<double*>(_vec.data()); };
     private:
         std::vector<double> _vec;
         T _state;
@@ -180,7 +170,6 @@ namespace planner{
         std::list<Vertex<T>*> _children;
     };
 }
-
 
 
 #endif //NURSINGROBOT_PLANNER_HPP

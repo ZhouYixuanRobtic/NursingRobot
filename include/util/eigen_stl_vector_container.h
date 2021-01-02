@@ -38,6 +38,7 @@
 /* Modified by Yixuan Zhou */
 #ifndef NURSINGROBOT_EIGEN_STL_VECTOR_CONTAINER_H
 #define NURSINGROBOT_EIGEN_STL_VECTOR_CONTAINER_H
+
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -45,8 +46,7 @@
 #include <vector>
 
 /** \brief Typedef's for STL containers of Eigen types with proper memory alignment. */
-namespace EigenSTL
-{
+namespace EigenSTL {
 
     typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > vector_Vector3f;
     typedef std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > vector_Vector3d;

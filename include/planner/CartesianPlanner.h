@@ -5,12 +5,11 @@
 #ifndef NURSINGROBOT_CARTESIANPLANNER_H
 #define NURSINGROBOT_CARTESIANPLANNER_H
 
-namespace planner{
+namespace planner {
     class CartesianPlanner {
 
     };
 }
-
 
 
 #endif //NURSINGROBOT_CARTESIANPLANNER_H
