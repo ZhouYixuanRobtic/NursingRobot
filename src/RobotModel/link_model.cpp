@@ -3,7 +3,7 @@
 #include "util/check_isometry.h"
 
 namespace robot_model {
-    LinkModel::LinkModel(const std::string& name)
+    LinkModel::LinkModel(const std::string &name)
             : name_(name), parent_joint_model_(nullptr), parent_link_model_(nullptr), is_parent_joint_fixed_(false),
               joint_origin_transform_is_identity_(true), first_collision_body_transform_index_(-1), link_index_(-1)
     {
@@ -12,7 +12,7 @@ namespace robot_model {
 
     LinkModel::~LinkModel() = default;
 
-    void LinkModel::setJointOriginTransform(const Eigen::Isometry3d& transform)
+    void LinkModel::setJointOriginTransform(const Eigen::Isometry3d &transform)
     {
         ASSERT_ISOMETRY(transform)  // unsanitized input, could contain a non-isometry
         joint_origin_transform_ = transform;
@@ -21,14 +21,14 @@ namespace robot_model {
                 joint_origin_transform_.translation().norm() < std::numeric_limits<double>::epsilon();
     }
 
-    void LinkModel::setParentJointModel(const JointModel* joint)
+    void LinkModel::setParentJointModel(const JointModel *joint)
     {
         parent_joint_model_ = joint;
         is_parent_joint_fixed_ = joint->getType() == JointModel::FIXED;
     }
 
-    void LinkModel::setGeometry(const std::vector<shapes::ShapeConstPtr>& shapes,
-                                const EigenSTL::vector_Isometry3d& origins)
+    void LinkModel::setGeometry(const std::vector<shapes::ShapeConstPtr> &shapes,
+                                const EigenSTL::vector_Isometry3d &origins)
     {
         shapes_ = shapes;
         collision_origin_transform_ = origins;
@@ -51,7 +51,7 @@ namespace robot_model {
             } else {
                 // we cannot use shapes::computeShapeExtents() for meshes, since that method does not provide information about
                 // the offset of the mesh origin
-                const shapes::Mesh* mesh = dynamic_cast<const shapes::Mesh*>(shapes_[i].get());
+                const shapes::Mesh *mesh = dynamic_cast<const shapes::Mesh *>(shapes_[i].get());
                 for (unsigned int j = 0; j < mesh->vertex_count; ++j) {
                     aabb.extend(transform * Eigen::Map<Eigen::Vector3d>(&mesh->vertices[3 * j]));
                 }
@@ -65,8 +65,8 @@ namespace robot_model {
             shape_extents_ = aabb.sizes();
     }
 
-    void LinkModel::setVisualMesh(const std::string& visual_mesh, const Eigen::Isometry3d& origin,
-                                  const Eigen::Vector3d& scale)
+    void LinkModel::setVisualMesh(const std::string &visual_mesh, const Eigen::Isometry3d &origin,
+                                  const Eigen::Vector3d &scale)
     {
         visual_mesh_filename_ = visual_mesh;
         visual_mesh_origin_ = origin;

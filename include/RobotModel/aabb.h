@@ -43,6 +43,6 @@ namespace robot_model {
     class AABB : public Eigen::AlignedBox3d {
     public:
         /** \brief Extend with a box transformed by the given transform. */
-        void extendWithTransformedBox(const Eigen::Isometry3d& transform, const Eigen::Vector3d& box);
+        void extendWithTransformedBox(const Eigen::Isometry3d &transform, const Eigen::Vector3d &box);
     };
 }

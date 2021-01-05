@@ -41,14 +41,15 @@ namespace planner {
     }
 
     template<typename T>
-    static T randomState(const Eigen::MatrixX2d* bounds_ptr, int dimensions = 0)
+    static T randomState(int dimensions = -1, const Eigen::MatrixX2d *bounds_ptr = nullptr)
     {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
         if (bounds_ptr != nullptr && bounds_ptr->rows() != dimensions) {
             throw std::invalid_argument("dimensions and bounds are not equal!");
         }
-        return dimensions == 0 ? T().random(randomEngine, bounds_ptr) : T(dimensions).random(randomEngine, bounds_ptr);
+        return dimensions == -1 ? T::temp().random(randomEngine, bounds_ptr) : T::temp(dimensions).random(randomEngine,
+                                                                                                          bounds_ptr);
     }
 
     /**
@@ -59,7 +60,7 @@ namespace planner {
      * @return A state in the direction of @target from @source (hyper linear interpolation)
      */
     template<typename T>
-    static T interpolate(const T& source, const T& target,
+    static T interpolate(const T &source, const T &target,
                          double lambda)
     {
         if (lambda > 1 || lambda < 0) {
@@ -75,7 +76,7 @@ namespace planner {
      * @return A state
      */
     template<typename T>
-    static T extend(const T& source, const T& target, double extend_length)
+    static T extend(const T &source, const T &target, double extend_length)
     {
         T extend_direction = target - source;
         extend_direction = extend_direction * (1 / extend_direction.norm());
@@ -94,7 +95,7 @@ namespace planner {
      * and divided equally.
      */
     template<typename T>
-    static T bezierInterpolate(const T& source, const T& target, double lambda)
+    static T bezierInterpolate(const T &source, const T &target, double lambda)
     {
         T delta = target - source;
         T result;
@@ -116,7 +117,7 @@ namespace planner {
      * @return The distance between the states
      */
     template<typename T>
-    double distance(const T& from, const T& to)
+    double distance(const T &from, const T &to)
     {
         return from.distance(to);
     }
@@ -130,7 +131,7 @@ namespace planner {
      */
     //TODO: Not implemented
     template<typename T>
-    std::vector<std::array<T, 6>> getBezierControlPoints(const std::vector<T>& state_list)
+    std::vector<std::array<T, 6>> getBezierControlPoints(const std::vector<T> &state_list)
     {
         std::vector<std::array<T, 6>> control_points_list{};
         return control_points_list;
@@ -141,8 +142,8 @@ namespace planner {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        explicit Vertex(const T& data, Vertex<T>* parent = nullptr, int dimensions = 6,
-                        std::function<void(T, double*)> TToArray = NULL)
+        explicit Vertex(const T &data, Vertex<T> *parent = nullptr, int dimensions = 6,
+                        std::function<void(T, double *)> TToArray = NULL)
                 : _state(data), _parent(parent)
         {
             _vec.resize(dimensions);
@@ -156,13 +157,22 @@ namespace planner {
             }
         };
 
-        const Vertex<T>* parent() const
+        explicit Vertex()
+                : _state(T::temp()),
+                  _vec(std::vector<double>()),
+                  _parent(nullptr),
+                  _children(std::list<Vertex<T> *>())
+        {
+
+        }
+
+        const Vertex<T> *parent() const
         { return _parent; };
 
         int depth() const
         {
             int n = 0;
-            Vertex<T>* ancestor = _parent;
+            Vertex<T> *ancestor = _parent;
             while (ancestor != nullptr) {
                 n++;
                 ancestor = ancestor->_parent;
@@ -170,16 +180,16 @@ namespace planner {
             return n;
         };
 
-        const T& state() const
+        const T &state() const
         { return _state; };
 
-        double* data() const
-        { return const_cast<double*>(_vec.data()); };
+        double *data() const
+        { return const_cast<double *>(_vec.data()); };
     private:
         std::vector<double> _vec;
         T _state;
-        Vertex* _parent;
-        std::list<Vertex<T>*> _children;
+        Vertex *_parent;
+        std::list<Vertex<T> *> _children;
     };
 }
 

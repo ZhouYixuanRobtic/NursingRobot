@@ -67,7 +67,7 @@
  * \param printError Whether an error should be printed to std::cerr with details about the false isometry.
  * \return Whether the given transform is close to an isometry or not.
  */
-inline bool checkIsometry(const Eigen::Isometry3d& transform, const double precision = CHECK_ISOMETRY_PRECISION,
+inline bool checkIsometry(const Eigen::Isometry3d &transform, const double precision = CHECK_ISOMETRY_PRECISION,
                           const bool printError = true)
 {
     if (!transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(), precision)) {
@@ -80,7 +80,7 @@ inline bool checkIsometry(const Eigen::Isometry3d& transform, const double preci
     }
 
     Eigen::Isometry3d::LinearMatrixType scale;
-    transform.computeRotationScaling((Eigen::Isometry3d::LinearMatrixType*) nullptr, &scale);
+    transform.computeRotationScaling((Eigen::Isometry3d::LinearMatrixType *) nullptr, &scale);
     if (!scale.isApprox(Eigen::Matrix3d::Identity(), precision)) {
         if (printError) {
             std::cerr

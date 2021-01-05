@@ -7,6 +7,7 @@
 
 #include "StateSpace.hpp"
 #include <iostream>
+#include <utility>
 
 namespace state_space {
 
@@ -15,7 +16,7 @@ namespace state_space {
      * @param omega a R3 vector representing w
      * @return a so3 matrix
      */
-    static so_3 VecToso3(const Eigen::Vector3d& omega)
+    static so_3 VecToso3(const Eigen::Vector3d &omega)
     {
         so_3 w_x;
         w_x << 0, -omega[2], omega[1],
@@ -29,19 +30,20 @@ namespace state_space {
      * @param a_so3 a so3 matrix
      * @return a R3 vector
      */
-    static R3 so3ToVec(const so_3& a_so3)
+    static R3 so3ToVec(const so_3 &a_so3)
     {
         return R3{-a_so3(1, 2), a_so3(0, 2), -a_so3(0, 1)};
     }
 
 
-    class SO3 : public virtual StateSpace<SO3> {
+    class SO3 : private virtual StateSpace<SO3> {
     private:
-        R3 _twist_2d_{};
+        R3 _twist_2d_;
 
-        SO_3 SO3_MATRIX_{};
+        SO_3 SO3_MATRIX_;
 
-        unsigned int _dimensions = 3;
+        const unsigned int _dimensions = 3;
+
         /**
          *
          * @return so3 matrix of this SO3 object
@@ -55,35 +57,38 @@ namespace state_space {
 
         explicit SO3(unsigned int dimensions = 3)
         {
-            _twist_2d_ = R3::Zero();
-            SO3_MATRIX_ = SO_3::Identity();
-        };
+            _twist_2d_.setZero();
+            SO3_MATRIX_.setIdentity();
+        }
 
-        SO3(const SO3& SO3_) : StateSpace(SO3_)
+        SO3(const SO3 &SO3_)
+                : StateSpace(SO3_),
+                  _twist_2d_(SO3_._twist_2d_),
+                  SO3_MATRIX_(SO3_.SO3_MATRIX_)
         {
-            _twist_2d_ = SO3_._twist_2d_;
-            SO3_MATRIX_ = SO3_.SO3_MATRIX_;
-        };
 
-        explicit SO3(const R3& twist)
+        }
+
+        explicit SO3(R3 twist)
+                : _twist_2d_(std::move(twist))
         {
-            _twist_2d_ = twist;
             so_3 so_3_ = NearZero(Theta()) ? Eigen::Matrix3d::Identity() : VecToso3(Vector());
             SO3_MATRIX_ = MatrixExp(so_3_);
         }
 
-        explicit SO3(const SO_3& rotation_matrix)
+        /**
+         * \note Construct SO3 using rotation_matrix, change that rotation matrix if it's not orthogonal
+         * */
+        explicit SO3(const SO_3 &rotation_matrix)
         {
-            /**
-             * \note Construct SO3 using rotation_matrix, may change that rotation matrix if it's not orthogonal
-             * */
+
             //R3 twist = so3ToVec(MatrixLog(rotation_matrix));
             Eigen::AngleAxisd rotation_vector(rotation_matrix);
             _twist_2d_ = rotation_vector.axis() * rotation_vector.angle();
             SO3_MATRIX_ = rotation_vector.matrix();
         }
 
-        explicit SO3(const Eigen::Matrix<double, 4, 1>& quaternion_)
+        explicit SO3(const Eigen::Vector4d &quaternion_)
         {
             Eigen::Quaterniond quaternion(quaternion_);
             *this = SO3(quaternion.toRotationMatrix());
@@ -98,7 +103,7 @@ namespace state_space {
             *this = SO3(rotation_matrix);
         }
 
-        explicit SO3(const double* data_ptr, unsigned int dimensions = 3)
+        explicit SO3(const double *data_ptr, unsigned int dimensions = 3)
         {
             Eigen::Vector3d temp_twist(data_ptr);
             *this = SO3(temp_twist);
@@ -106,7 +111,7 @@ namespace state_space {
 
         ~SO3() override = default;
 
-        const R3& Vector() const
+        R3 Vector() const
         { return _twist_2d_; };
 
         R3 Axis() const
@@ -115,7 +120,7 @@ namespace state_space {
         double Theta() const
         { return _twist_2d_.norm(); };
 
-        const SO_3& SO3Matrix() const
+        SO_3 SO3Matrix() const
         { return SO3_MATRIX_; };
 
         so_3 Unitso3Matrix() const
@@ -131,23 +136,27 @@ namespace state_space {
         };
 
         Eigen::Vector3d RPY() const
-        { return SO3_MATRIX_.eulerAngles(0, 1, 2); };
+        {
+            return SO3_MATRIX_.eulerAngles(0, 1, 2);
+        };
 
         double norm() const override
         {
             return _twist_2d_.norm();
         }
 
-        SO3 operator+(const SO3& input) const override
+        SO3 operator+(const SO3 &input) const override
         {
-            SO_3 result{SO_3::Zero()};
+            SO_3 result;
+            result.setZero();
             result.noalias() += this->SO3Matrix() * input.SO3Matrix();
             return SO3(result);
         };
 
-        SO3 operator-(const SO3& input) const override
+        SO3 operator-(const SO3 &input) const override
         {
-            SO_3 tmp_matrix{SO_3::Zero()};
+            SO_3 tmp_matrix;
+            tmp_matrix.setZero();
             tmp_matrix.noalias() += input.SO3Matrix().inverse() * this->SO3Matrix();
             return SO3(tmp_matrix);
         };
@@ -158,65 +167,86 @@ namespace state_space {
             return SO3(temp_twist);
         };
 
-        friend SO3 operator*(double s, const SO3& input)
+        friend SO3 operator*(double s, const SO3 &input)
         {
             return input * s;
         }
 
         SO3 operator()(double theta) const override
         {
-            R3 temp_twist = this->Axis() * theta;
+            R3 temp_twist(this->Axis() * theta);
             return SO3(temp_twist);
         };
 
-        bool operator==(const SO3& other) const override
+        bool operator==(const SO3 &other) const override
         {
             return _twist_2d_ == other._twist_2d_;
         }
 
+        SO3 &operator=(const SO3 &input)
+        {
+            StateSpace<SO3>::operator=(input);
+            this->_twist_2d_ = input._twist_2d_;
+            this->SO3_MATRIX_ = input.SO3_MATRIX_;
+        }
 
         SO3 inverse() const override
         {
-            R3 twist = -Axis() * Theta();
+            R3 twist(-Axis() * Theta());
             return SO3(twist);
         };
+
+        static SO3 temp(unsigned int dimensions = 3)
+        {
+            return SO3(dimensions);
+        }
 
         unsigned int Dimensions() const override
         {
             return _dimensions;
         };
 
-        const double* data() const override
+        const double *data() const override
         {
             return this->_twist_2d_.data();
         };
 
-        SO3 random(std::default_random_engine& randomEngine, const Eigen::MatrixX2d* bounds_ptr) const override
+        SO3 random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override
         {
             //Effective Sampling and Distance Metrics for 3D Rigid Body Path Planning [c]
             //James J. Kuffner
-            //use the uniformly sampling unit Quaternion
-            std::uniform_real_distribution<double> x_distribution(0, 1);
-            /*here we use convention of XYZ YPR.
-            double roll,pitch,yaw;
-            yaw = 2*M_PI*x_distribution(randomEngine)-M_PI;
-            pitch = std::acos(1-2*x_distribution(randomEngine))-M_PI_2;
-            roll = 2*M_PI*x_distribution(randomEngine)-M_PI;*/
-            //uniformly sampling using unit quaternions;
-            //Noted:    do not have a bounded method, because of can't have a compact presentation could describe the range of a rotation
-            double s = x_distribution(randomEngine);
-            double sigma1 = std::sqrt(1 - s);
-            double sigma2 = std::sqrt(s);
-            double theta1, theta2;
-            theta1 = 2 * M_PI * x_distribution(randomEngine);
-            theta2 = 2 * M_PI * x_distribution(randomEngine);
-            Eigen::Vector4d random_quaternion{sin(theta1) * sigma1, cos(theta1) * sigma1, sin(theta2) * sigma2,
-                                              cos(theta2) * sigma2};
-
-            return SO3(random_quaternion);
+            if (!bounds_ptr) {
+                //use the uniformly sampling unit Quaternion
+                std::uniform_real_distribution<double> x_distribution(0, 1);
+                /*here we use convention of XYZ YPR.
+                double roll,pitch,yaw;
+                yaw = 2*M_PI*x_distribution(randomEngine)-M_PI;
+                pitch = std::acos(1-2*x_distribution(randomEngine))-M_PI_2;
+                roll = 2*M_PI*x_distribution(randomEngine)-M_PI;*/
+                //uniformly sampling using unit quaternions;
+                double s = x_distribution(randomEngine);
+                double sigma1 = std::sqrt(1 - s);
+                double sigma2 = std::sqrt(s);
+                double theta1, theta2;
+                theta1 = 2 * M_PI * x_distribution(randomEngine);
+                theta2 = 2 * M_PI * x_distribution(randomEngine);
+                Eigen::Vector4d random_quaternion{sin(theta1) * sigma1, cos(theta1) * sigma1, sin(theta2) * sigma2,
+                                                  cos(theta2) * sigma2};
+                return SO3(random_quaternion);
+            }
+            double length = SO3(R3(bounds_ptr->col(0))).distance(SO3(R3(bounds_ptr->col(1))));
+            double sampled_upper_distance{std::numeric_limits<double>::max()},
+                    sampled_lower_distance{std::numeric_limits<double>::max()};
+            SO3 uniformly_sampled_temp_result;
+            while (sampled_upper_distance > length || sampled_lower_distance > length) {
+                uniformly_sampled_temp_result = random(randomEngine, nullptr);
+                sampled_upper_distance = SO3(R3(bounds_ptr->col(0))).distance(uniformly_sampled_temp_result);
+                sampled_lower_distance = SO3(R3(bounds_ptr->col(1))).distance(uniformly_sampled_temp_result);
+            }
+            return uniformly_sampled_temp_result;
         };
 
-        double distance(const SO3& to) const override
+        double distance(const SO3 &to) const override
         {
             //Smooth invariant interpolation of rotations
             //F.park & B.Ravani
@@ -224,7 +254,7 @@ namespace state_space {
             return (to - *this).Vector().norm();
         };
 
-        static SO_3 MatrixExp(const so_3& so3_)
+        static SO_3 MatrixExp(const so_3 &so3_)
         {
             R3 twist{so3ToVec(so3_)};
             double theta = twist.norm();
@@ -237,10 +267,10 @@ namespace state_space {
             }
         }
 
-        static so_3 MatrixLog(const SO_3& SO3_)
+        static so_3 MatrixLog(const SO_3 &SO3_)
         {
             double acos_input = (SO3_.trace() - 1) / 2.0;
-            Eigen::Matrix3d m_ret = Eigen::Matrix3d::Zero();
+            Eigen::Matrix3d m_ret(Eigen::Matrix3d::Zero());
             if (acos_input >= 1)
                 return m_ret;
             else if (acos_input <= -1) {
@@ -270,7 +300,7 @@ namespace state_space {
         /**
         * \brief Check whether the given matrix is really (mathematically) an orthogonal (rotation) matrix.
         */
-        static inline bool isOrthogonal(const state_space::SO_3& matrix)
+        static inline bool isOrthogonal(const state_space::SO_3 &matrix)
         {
             return (matrix * matrix.transpose()).isApprox(state_space::SO_3::Identity(),
                                                           Eigen::NumTraits<double>::dummy_precision());
@@ -281,7 +311,7 @@ namespace state_space {
          * @param matrix a 3X3 matrix
          * @return a mathematically orthogonal (least square solution) matrix
          */
-        static state_space::SO_3 projectToSO3(const state_space::SO_3& matrix)
+        static state_space::SO_3 projectToSO3(const state_space::SO_3 &matrix)
         {
             Eigen::JacobiSVD<state_space::SO_3> svd(matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
             SO_3 R = svd.matrixU() * svd.matrixV().transpose();
@@ -291,6 +321,11 @@ namespace state_space {
             return R;
         }
 
+        friend std::ostream &operator<<(std::ostream &s, const SO3 &input)
+        {
+            s << input._twist_2d_.transpose();
+            return s;
+        }
     };
 
 }

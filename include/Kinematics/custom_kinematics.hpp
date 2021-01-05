@@ -16,11 +16,11 @@ namespace kinematics {
  * @param references for singular joint, For AUBO/UR, it's the sixth joint
  * @return IK SINGULAR CODE
  */
-    IK_SINGULAR_CODE aubo_i5_analytical_IK(Eigen::MatrixXd& joint_solutions, const state_space::SE3& home_configuration,
-                                           const state_space::SE_3& desired_pose,
-                                           const state_space::JointSpace* references_ptr)
+    IK_SINGULAR_CODE aubo_i5_analytical_IK(Eigen::MatrixXd &joint_solutions, const state_space::SE3 &home_configuration,
+                                           const state_space::SE_3 &desired_pose,
+                                           const state_space::JointSpace *references_ptr)
     {
-        const state_space::SE_3& a = desired_pose;
+        const state_space::SE_3 &a = desired_pose;
         state_space::R6 upper_bound;
         upper_bound.setConstant(3.05);
         state_space::R6 lower_bound;
@@ -117,7 +117,7 @@ namespace kinematics {
                     //num_solutions++;
 
                     //if any angle is outside the bound range do not accept this solution
-                    state_space::JointSpace check_vector(solutions[num_solutions],6);
+                    state_space::JointSpace check_vector(solutions[num_solutions], 6);
                     if (check_vector.isValid(upper_bound, lower_bound))
                         num_solutions++;
 

@@ -50,12 +50,12 @@ namespace robot_model {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        explicit RobotModel(std::string model_config, const state_space::JointSpace& joint_angles);
+        explicit RobotModel(std::string model_config, const state_space::JointSpace &joint_angles);
 
         ~RobotModel() = default;
 
         /**@brief set current joint angles*/
-        void setCurrentJointAngles(const state_space::JointSpace& joint_angles)
+        void setCurrentJointAngles(const state_space::JointSpace &joint_angles)
         {
             _current_joint_angles = joint_angles;
         }
@@ -67,7 +67,7 @@ namespace robot_model {
         }
 
         /**@brief set end effector configuration*/
-        void setEndEffector(const state_space::SE3& ee_configuration)
+        void setEndEffector(const state_space::SE3 &ee_configuration)
         { _ee_configuration = ee_configuration; };
 
         /**@brief get stored end effector configuration*/
@@ -75,7 +75,7 @@ namespace robot_model {
         { return _ee_configuration; };
 
         /**@brief set mount configuration*/
-        void setMount(const state_space::SE3& mount_configuration)
+        void setMount(const state_space::SE3 &mount_configuration)
         { _mount_configuration = mount_configuration; };
 
         /**@brief get stored mount configuration*/
@@ -89,7 +89,7 @@ namespace robot_model {
         state_space::vector_SE3 computeTransform() const;
 
         /**@brief compute transform for every link using given joint angles*/
-        state_space::vector_SE3 computeTransform(const state_space::JointSpace& joint_angles) const;
+        state_space::vector_SE3 computeTransform(const state_space::JointSpace &joint_angles) const;
 
     };
 }

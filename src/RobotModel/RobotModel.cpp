@@ -2,7 +2,7 @@
 
 using namespace robot_model;
 
-RobotModel::RobotModel(std::string model_config, const state_space::JointSpace& joint_angles)
+RobotModel::RobotModel(std::string model_config, const state_space::JointSpace &joint_angles)
         : _model_config(std::move(model_config))
 {
     _current_joint_angles = joint_angles;
@@ -13,7 +13,7 @@ RobotModel::RobotModel(std::string model_config, const state_space::JointSpace& 
         std::map<std::string, std::vector<double>> config_map;
         config_map = doc["aubo_i5"]["joint_configuration"].as<std::map<std::string, std::vector<double>>>();
 
-        for (const auto& it : config_map) {
+        for (const auto &it : config_map) {
             if (it.second.size() != 7) {
                 char buf[100];
                 sprintf(buf, "wrong pose, should have 7 elements but have %d elements", (int) it.second.size());
@@ -44,7 +44,7 @@ state_space::vector_SE3 RobotModel::computeTransform() const
     return result;
 }
 
-state_space::vector_SE3 RobotModel::computeTransform(const state_space::JointSpace& joint_angles) const
+state_space::vector_SE3 RobotModel::computeTransform(const state_space::JointSpace &joint_angles) const
 {
     state_space::vector_SE3 result{};
     state_space::SE3 temp_SE3 = _mount_configuration;

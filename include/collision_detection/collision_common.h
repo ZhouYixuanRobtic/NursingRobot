@@ -123,7 +123,7 @@ namespace collision_detection {
         }
 
         /// Order cost sources so that the most costly source is at the top
-        bool operator<(const CostSource& other) const
+        bool operator<(const CostSource &other) const
         {
             double c1 = cost * getVolume();
             double c2 = other.cost * other.getVolume();
@@ -213,7 +213,7 @@ namespace collision_detection {
         std::size_t max_cost_sources;
 
         /** \brief Function call that decides whether collision detection should stop. */
-        boost::function<bool(const CollisionResult&)> is_done;
+        boost::function<bool(const CollisionResult &)> is_done;
 
         /** \brief Flag indicating whether information about detected collisions should be reported */
         bool verbose;
@@ -239,7 +239,7 @@ namespace collision_detection {
         }
 
         /// Compute \e active_components_only_ based on \e req_
-        void enableGroup(const robot_model::RobotModelConstPtr& robot_model)
+        void enableGroup(const robot_model::RobotModelConstPtr &robot_model)
         {
             if (robot_model->hasJointModelGroup(group_name))
                 active_components_only = &robot_model->getJointModelGroup(group_name)->getUpdatedLinkModelsSet();
@@ -265,10 +265,10 @@ namespace collision_detection {
         std::string group_name;
 
         /// The set of active components to check
-        const std::set<const moveit::core::LinkModel*>* active_components_only;
+        const std::set<const moveit::core::LinkModel *> *active_components_only;
 
         /// The allowed collision matrix used to filter checks
-        const AllowedCollisionMatrix* acm;
+        const AllowedCollisionMatrix *acm;
 
         /// Only calculate distances for objects within this threshold to each other.
         /// If set, this can significantly reduce the number of queries.
@@ -323,13 +323,13 @@ namespace collision_detection {
         }
 
         /// Compare if the distance is less than another
-        bool operator<(const DistanceResultsData& other)
+        bool operator<(const DistanceResultsData &other)
         {
             return (distance < other.distance);
         }
 
         /// Compare if the distance is greater than another
-        bool operator>(const DistanceResultsData& other)
+        bool operator>(const DistanceResultsData &other)
         {
             return (distance > other.distance);
         }

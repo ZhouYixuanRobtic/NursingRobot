@@ -12,7 +12,7 @@ namespace state_space {
      * @param a_se3
      * @return a twist
      */
-    static R6 se3ToVec(const se_3& a_se3)
+    static R6 se3ToVec(const se_3 &a_se3)
     {
         R6 twist;
         twist << so3ToVec(a_se3.block<3, 3>(0, 0)), a_se3.block<3, 1>(0, 3);
@@ -24,7 +24,7 @@ namespace state_space {
      * @param a_twist
      * @return a se3 matrix
      */
-    static se_3 VecTose3(const R6& a_twist)
+    static se_3 VecTose3(const R6 &a_twist)
     {
         se_3 se_3_;
         se_3_ << VecToso3(a_twist.block<3, 1>(0, 0)), a_twist.block<3, 1>(3, 0),
@@ -37,9 +37,9 @@ namespace state_space {
      * @param a_SE3
      * @return a 6x6 matrix, which is the adjoint matrix of @a_SE3
      */
-    static adjoint_mat GetAdjoint(const SE_3& a_SE3)
+    static adjoint_mat GetAdjoint(const SE_3 &a_SE3)
     {
-        adjoint_mat ad_ret{};
+        adjoint_mat ad_ret;
         ad_ret << a_SE3.block<3, 3>(0, 0), Eigen::Matrix3d::Zero(),
                 VecToso3(a_SE3.block<3, 1>(0, 3)) * a_SE3.block<3, 3>(0, 0), a_SE3.block<3, 3>(0, 0);
         return ad_ret;
@@ -47,13 +47,14 @@ namespace state_space {
 
     ALIGNED_CLASS_STL_FORWARD(SE3)
 
-    class SE3 : public virtual StateSpace<SE3> {
+    class SE3 : private virtual StateSpace<SE3> {
     protected:
-        R6 _twist_3d_{};
+        R6 _twist_3d_;
 
         SE_3 SE3_matrix_;
 
-        unsigned int _dimensions = 6;
+        const unsigned int _dimensions = 6;
+
         /**
          *
          * @return se3 matrix of this SE3 object
@@ -80,22 +81,23 @@ namespace state_space {
             SE3_matrix_.setIdentity();
         };
 
-        SE3(const SE3& a_SE3) : StateSpace(a_SE3)
+        SE3(const SE3 &a_SE3)
+                : StateSpace(a_SE3),
+                  _twist_3d_(a_SE3._twist_3d_),
+                  SE3_matrix_(a_SE3.SE3_matrix_)
         {
-            _twist_3d_ = a_SE3._twist_3d_;
-            SE3_matrix_ = a_SE3.SE3_matrix_;
+
         }
 
-        explicit SE3(const double* data_ptr, unsigned int dimensions = 6)
+        explicit SE3(const double *data_ptr, unsigned int dimensions = 6)
         {
-            state_space::R6 temp_twist{data_ptr};
-            *this = SE3(temp_twist);
+            *this = SE3(state_space::R6(data_ptr));
         }
 
-        explicit SE3(const R6& twist)
+        explicit SE3(const R6 &twist)
         {
             _twist_3d_ = twist;
-            se_3 se_3_{};
+            se_3 se_3_;
             if (!NearZero(Theta()))
                 se_3_ = VecTose3(Vector());
             else
@@ -104,7 +106,7 @@ namespace state_space {
             SE3_matrix_ = MatrixExp(se_3_);
         }
 
-        explicit SE3(const Eigen::Matrix<double, 7, 1>& pose_with_quaternion)
+        explicit SE3(const Eigen::Matrix<double, 7, 1> &pose_with_quaternion)
         {
             Eigen::Vector3d translation{pose_with_quaternion.block<3, 1>(0, 0)};
             Eigen::Quaterniond rotation{pose_with_quaternion.block<4, 1>(3, 0)};
@@ -114,7 +116,7 @@ namespace state_space {
             *this = SE3(transformation_matrix);
         }
 
-        explicit SE3(const Eigen::Affine3d& transformation_matrix)
+        explicit SE3(const Eigen::Affine3d &transformation_matrix)
         {
             *this = SE3(transformation_matrix.matrix());
         }
@@ -122,23 +124,36 @@ namespace state_space {
         /**
          * \note Construct SE3 using transform matrix may lose some data, if it's rotation part isn't orthogonal
          */
-        explicit SE3(const SE_3& transformation_matrix)
+        explicit SE3(const SE_3 &transformation_matrix)
         {
             SO_3 temp_SO_3(transformation_matrix.block<3, 3>(0, 0));
-            SO3 SO3_part(temp_SO_3);
-            *this = SE3(SO3_part, transformation_matrix.block<3, 1>(0, 3));
+            *this = SE3(SO3(temp_SO_3), transformation_matrix.block<3, 1>(0, 3));
         }
 
-        explicit SE3(const SO3& SO3_part, const Eigen::Vector3d& translation_part)
+        explicit SE3(const SO3 &SO3_part, const Eigen::Vector3d &translation_part)
         {
             SE3_matrix_ << SO3_part.SO3Matrix(), translation_part,
                     0, 0, 0, 1;
             _twist_3d_ = se3ToVec(MatrixLog(SE3_matrix_));
         }
 
+        explicit SE3(const std::vector<double> &vector_input)
+        {
+            if (vector_input.size() == 6) {
+                *this = SE3(R6(vector_input.data()));
+                return;
+            } else if (vector_input.size() == 7) {
+                *this = SE3(Eigen::Matrix<double, 7, 1>(vector_input.data()));
+                return;
+            } else {
+                throw std::invalid_argument(
+                        "only support initialize with 6 or 7 coefficients within a vector\n");
+            }
+        }
+
         ~SE3() override = default;
 
-        const R6& Vector() const
+        R6 Vector() const
         { return _twist_3d_; };
 
         R6 Axis() const
@@ -156,7 +171,7 @@ namespace state_space {
                 return _twist_3d_.block<3, 1>(0, 0).norm();
         };
 
-        const SE_3& SE3Matrix() const
+        SE_3 SE3Matrix() const
         { return SE3_matrix_; };
 
         se_3 se3Matrix() const
@@ -171,6 +186,11 @@ namespace state_space {
             return SO3(omega);
         };
 
+        Eigen::Vector3d translationPart() const
+        {
+            return SE3_matrix_.block<3, 1>(0, 3);
+        }
+
         Eigen::Matrix<double, 7, 1> pose_with_quaternion() const
         {
             Eigen::Matrix<double, 7, 1> result;
@@ -178,30 +198,32 @@ namespace state_space {
             return result;
         };
 
-        const double* data() const override
+        const double *data() const override
         {
             return this->_twist_3d_.data();
         };
 
         adjoint_mat Adjoint()
         {
-            adjoint_mat ad_ret{};
-            const SE_3& T = this->SE3_matrix_;
+            const SE_3 &T = this->SE3_matrix_;
+            adjoint_mat ad_ret;
             ad_ret << T.block<3, 3>(0, 0), Eigen::Matrix3d::Zero(),
                     VecToso3(T.block<3, 1>(0, 3)) * T.block<3, 3>(0, 0), T.block<3, 3>(0, 0);
             return ad_ret;
         }
 
-        SE3 operator+(const SE3& input) const override
+        SE3 operator+(const SE3 &input) const override
         {
-            SE_3 result{SE_3::Zero()};
+            SE_3 result;
+            result.setZero();
             result.noalias() += this->SE3Matrix() * input.SE3Matrix();
             return SE3(result);
         };
 
-        SE3 operator-(const SE3& input) const override
+        SE3 operator-(const SE3 &input) const override
         {
-            SE_3 tmp_matrix{SE_3::Zero()};
+            SE_3 tmp_matrix;
+            tmp_matrix.setZero();
             tmp_matrix.noalias() += input.SE3Matrix().inverse() * this->SE3Matrix();
             return SE3(tmp_matrix);
         };
@@ -212,20 +234,32 @@ namespace state_space {
             return SE3(temp_twist);
         };
 
-        friend SE3 operator*(double s, const SE3& input)
+        friend SE3 operator*(double s, const SE3 &input)
         {
             return input * s;
         };
 
         SE3 operator()(double theta) const override
         {
-            R6 temp_twist = this->Axis() * theta;
+            R6 temp_twist(this->Axis() * theta);
             return SE3(temp_twist);
         };
 
-        bool operator==(const SE3& other) const override
+        SE3 &operator=(const SE3 &input)
+        {
+            StateSpace<SE3>::operator=(input);
+            this->_twist_3d_ = input._twist_3d_;
+            this->SE3_matrix_ = input.SE3_matrix_;
+        }
+
+        bool operator==(const SE3 &other) const override
         {
             return _twist_3d_ == other._twist_3d_;
+        }
+
+        static SE3 temp(unsigned int dimensions = 6)
+        {
+            return SE3(dimensions);
         }
 
         double norm() const override
@@ -240,31 +274,49 @@ namespace state_space {
 
         SE3 inverse() const override
         {
-            R6 twist = -Axis() * Theta();
+            R6 twist(-Axis() * Theta());
             return SE3(twist);
         };
 
-        SE3 random(std::default_random_engine& randomEngine, const Eigen::MatrixX2d* bounds_ptr) const override
+        SE3 random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override
         {
-            if (bounds_ptr != nullptr && bounds_ptr->rows() != 3)
-                throw std::invalid_argument("SE3 random only bound translation");
-
-            return SE3(SO3().random(randomEngine, nullptr),
-                       Rn(3).random(randomEngine, bounds_ptr).Vector());
+            if (bounds_ptr == nullptr) {
+                return SE3(SO3().random(randomEngine, nullptr),
+                           Rn::temp(3).random(randomEngine, nullptr).Vector());
+            }
+            /**
+             * \noted: bounds must be twist format 6X1 [w,v];
+             * */
+            auto upper_bound = SE3(R6(bounds_ptr->col(0)));
+            auto lower_bound = SE3(R6(bounds_ptr->col(1)));
+            Eigen::MatrixX2d bound_for_translation;
+            bound_for_translation.resize(3, 2);
+            bound_for_translation << upper_bound.translationPart(), lower_bound.translationPart();
+            SE3 uniformly_sampled_result;
+            double length = upper_bound.distance(lower_bound);
+            double sampled_upper_distance{std::numeric_limits<double>::max()},
+                    sampled_lower_distance{std::numeric_limits<double>::max()};
+            while (sampled_lower_distance > length || sampled_upper_distance > length) {
+                uniformly_sampled_result = SE3(SO3::temp().random(randomEngine, nullptr),
+                                               Rn::temp(3).random(randomEngine, &bound_for_translation).Vector());
+                sampled_upper_distance = upper_bound.distance(uniformly_sampled_result);
+                sampled_lower_distance = lower_bound.distance(uniformly_sampled_result);
+            }
+            return uniformly_sampled_result;
         };
 
-        double distance(const SE3& to) const override
+        double distance(const SE3 &to) const override
         {
             //similar to SO3 distance
             return (to - *this).Vector().norm();
         };
 
-        static SE_3 MatrixExp(const se_3& se3_)
+        static SE_3 MatrixExp(const se_3 &se3_)
         {
             R3 twist{so3ToVec(se3_.block<3, 3>(0, 0))};
             SO3 SO3_part(twist);
 
-            SE_3 m_ret{};
+            SE_3 m_ret;
             if (NearZero(SO3_part.Theta())) {
                 m_ret << SO3_part.SO3Matrix(), se3_.block<3, 1>(0, 3),
                         0, 0, 0, 1;
@@ -279,17 +331,16 @@ namespace state_space {
                         0, 0, 0, 1;
             }
 
-
             return m_ret;
         }
 
-        static se_3 MatrixLog(const SE_3& SE3_)
+        static se_3 MatrixLog(const SE_3 &SE3_)
         {
             SO_3 tmp_matrix{SE3_.block<3, 3>(0, 0)};
             SO3 SO3_part(tmp_matrix);
 
             double theta = SO3_part.Theta();
-            se_3 m_ret{};
+            se_3 m_ret;
             if (NearZero(theta)) {
                 m_ret << Eigen::Matrix3d::Zero(), SE3_.block<3, 1>(0, 3),
                         0, 0, 0, 0;
@@ -305,7 +356,7 @@ namespace state_space {
             return m_ret;
         }
 
-        static R6 getNormalizedTwist(const R6& twist)
+        static R6 getNormalizedTwist(const R6 &twist)
         {
             double theta = twist.block<3, 1>(0, 0).norm();
             if (!NearZero(twist.norm()) && NearZero(theta))
@@ -321,19 +372,25 @@ namespace state_space {
             return SE3(temp_twist);
         };
 
-        static inline bool isSE3(const SE_3& transform)
+        static inline bool isSE3(const SE_3 &transform)
         {
             return (SO3::isOrthogonal(transform.block<3, 3>(0, 0))) &&
                    transform.matrix().row(3).isApprox(Eigen::Vector4d::UnitW().transpose(),
                                                       Eigen::NumTraits<double>::dummy_precision());
         }
 
-        static inline SE_3 projectToSE3(const SE_3& transform)
+        static inline SE_3 projectToSE3(const SE_3 &transform)
         {
             SE_3 temp;
             temp << SO3::projectToSO3(transform.block<3, 3>(0, 0)), transform.block<3, 1>(0, 3),
                     0, 0, 0, 1;
             return temp;
+        }
+
+        friend std::ostream &operator<<(std::ostream &s, const SE3 &input)
+        {
+            s << input.pose_with_quaternion().transpose();
+            return s;
         }
     };
 

@@ -24,7 +24,7 @@ namespace collision_detection {
     }  // namespace AllowedCollision
     /** \brief Signature of predicate that decides whether a contact is allowed or not (when AllowedCollision::Type is
  * CONDITIONAL) */
-    using DecideContactFn = boost::function<bool(collision_detection::Contact&)>;
+    using DecideContactFn = boost::function<bool(collision_detection::Contact &)>;
 
     MOVEIT_CLASS_FORWARD(AllowedCollisionMatrix);  // Defines AllowedCollisionMatrixPtr, ConstPtr, WeakPtr... etc
 
@@ -40,13 +40,13 @@ namespace collision_detection {
          *  @param names a vector of names (corresponding to object IDs in the collision world).
          *  @param allowed If false, indicates that collisions between all elements must be checked for and no collisions
          *  will be ignored. */
-        AllowedCollisionMatrix(const std::vector <std::string>& names, bool allowed = false);
+        AllowedCollisionMatrix(const std::vector <std::string> &names, bool allowed = false);
 
         /** @brief Construct the structure from a message representation */
-        AllowedCollisionMatrix(const moveit_msgs::AllowedCollisionMatrix& msg);
+        AllowedCollisionMatrix(const moveit_msgs::AllowedCollisionMatrix &msg);
 
         /** @brief Copy constructor */
-        AllowedCollisionMatrix(const AllowedCollisionMatrix& acm) = default;
+        AllowedCollisionMatrix(const AllowedCollisionMatrix &acm) = default;
 
         /** @brief Get the type of the allowed collision between two elements. Return true if the entry is included in the
          * collision matrix.
@@ -54,8 +54,8 @@ namespace collision_detection {
          *  @param name1 name of first element
          *  @param name2 name of second element
          *  @param allowed_collision_type The allowed collision type will be filled here */
-        bool getEntry(const std::string& name1, const std::string& name2,
-                      AllowedCollision::Type& allowed_collision_type) const;
+        bool getEntry(const std::string &name1, const std::string &name2,
+                      AllowedCollision::Type &allowed_collision_type) const;
 
         /** @brief Get the allowed collision predicate between two elements. Return true if a predicate for entry is included
          * in the collision matrix
@@ -64,28 +64,28 @@ namespace collision_detection {
          *  @param name2 name of second element
          *  @param fn A callback function that is used to decide if collisions are allowed between the two elements is filled
          * here */
-        bool getEntry(const std::string& name1, const std::string& name2, DecideContactFn& fn) const;
+        bool getEntry(const std::string &name1, const std::string &name2, DecideContactFn &fn) const;
 
         /** @brief Check if the allowed collision matrix has an entry at all for an element. Returns true if the element is
          * included.
          *  @param name name of the element */
-        bool hasEntry(const std::string& name) const;
+        bool hasEntry(const std::string &name) const;
 
         /** @brief Check if the allowed collision matrix has an entry for a pair of elements. Returns true if the pair is
          * included.
          *  @param name1 name of first element
          *  @param name2 name of second element*/
-        bool hasEntry(const std::string& name1, const std::string& name2) const;
+        bool hasEntry(const std::string &name1, const std::string &name2) const;
 
         /** @brief Remove an entry corresponding to a pair of elements. Nothing happens if the pair does not exist in the
          * collision matrix.
          *  @param name1 name of first element
          *  @param name2 name of second element*/
-        void removeEntry(const std::string& name1, const std::string& name2);
+        void removeEntry(const std::string &name1, const std::string &name2);
 
         /** @brief Remove all entries corresponding to a name (all pairs that include this name)
          *  @param name namespace*/
-        void removeEntry(const std::string& name);
+        void removeEntry(const std::string &name);
 
         /** @brief Set an entry corresponding to a pair of elements
          *  @param name1 name of first element
@@ -94,7 +94,7 @@ namespace collision_detection {
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::string& name1, const std::string& name2, bool allowed);
+        void setEntry(const std::string &name1, const std::string &name2, bool allowed);
 
         /** @brief Set an entry corresponding to a pair of elements. This sets the type of the entry to
          * AllowedCollision::CONDITIONAL.
@@ -102,7 +102,7 @@ namespace collision_detection {
          *  @param name2 name of second element
          *  @param fn A callback function that is used to decide if collisions are allowed between the two elements is
          * expected here */
-        void setEntry(const std::string& name1, const std::string& name2, const DecideContactFn& fn);
+        void setEntry(const std::string &name1, const std::string &name2, const DecideContactFn &fn);
 
         /** @brief Set the entries corresponding to a name. With each of the the known names in the collision matrix, form a
          * pair using the name
@@ -112,7 +112,7 @@ namespace collision_detection {
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::string& name, bool allowed);
+        void setEntry(const std::string &name, bool allowed);
 
         /** @brief Set multiple entries. Pairs of names are formed using \e name and \e other_names
          *  @param name name of first element
@@ -122,7 +122,7 @@ namespace collision_detection {
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::string& name, const std::vector <std::string>& other_names, bool allowed);
+        void setEntry(const std::string &name, const std::vector <std::string> &other_names, bool allowed);
 
         /** @brief Set an entry corresponding to all possible pairs between two sets of elements
          *  @param names1 First set of names
@@ -131,7 +131,7 @@ namespace collision_detection {
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between two elements are ok and an
          * explicit collision
          *  computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setEntry(const std::vector <std::string>& names1, const std::vector <std::string>& names2, bool allowed);
+        void setEntry(const std::vector <std::string> &names1, const std::vector <std::string> &names2, bool allowed);
 
         /** @brief Set an entry corresponding to all known pairs
          *  @param allowed If false, indicates that collisions between two elements must be checked for and no collisions
@@ -141,10 +141,10 @@ namespace collision_detection {
         void setEntry(bool allowed);
 
         /** @brief Get all the names known to the collision matrix */
-        void getAllEntryNames(std::vector <std::string>& names) const;
+        void getAllEntryNames(std::vector <std::string> &names) const;
 
         /** @brief Get the allowed collision matrix as a message */
-        void getMessage(moveit_msgs::AllowedCollisionMatrix& msg) const;
+        void getMessage(moveit_msgs::AllowedCollisionMatrix &msg) const;
 
         /** @brief Clear the allowed collision matrix */
         void clear();
@@ -165,7 +165,7 @@ namespace collision_detection {
          *  will be ignored (AllowedCollision::NEVER). If true, indicates that collisions between \e name and any other
          * element are ok and
          *  an explicit collision computation is not necessary (AllowedCollision::ALWAYS).*/
-        void setDefaultEntry(const std::string& name, bool allowed);
+        void setDefaultEntry(const std::string &name, bool allowed);
 
         /** @brief Set the default value for entries that include \e name to be AllowedCollision::CONDITIONAL and specify the
          * allowed contact predicate to be \e fn.
@@ -175,14 +175,14 @@ namespace collision_detection {
          *  @param name The name of the element for which to set the default value
          *  @param fn A callback function that is used to decide if collisions are allowed between \e name and some other
          * element is expected here. */
-        void setDefaultEntry(const std::string& name, const DecideContactFn& fn);
+        void setDefaultEntry(const std::string &name, const DecideContactFn &fn);
 
         /** @brief Get the type of the allowed collision between to be considered by default for an element. Return true if a
          * default value was
          *  found for the specified element. Return false otherwise.
          *  @param name name of the element
          *  @param allowed_collision The default allowed collision type will be filled here */
-        bool getDefaultEntry(const std::string& name, AllowedCollision::Type& allowed_collision) const;
+        bool getDefaultEntry(const std::string &name, AllowedCollision::Type &allowed_collision) const;
 
         /** @brief Get the type of the allowed collision between to be considered by default for an element. Return true if a
          * default value was
@@ -190,7 +190,7 @@ namespace collision_detection {
          *  @param name name of the element
          *  @param fn A callback function that is used to decide if collisions are allowed between the two elements is filled
          * here. */
-        bool getDefaultEntry(const std::string& name, DecideContactFn& fn) const;
+        bool getDefaultEntry(const std::string &name, DecideContactFn &fn) const;
 
         /** @brief Get the allowed collision predicate between two elements. Return true if a predicate for entry is included
          * in the collision matrix
@@ -205,7 +205,7 @@ namespace collision_detection {
          *  @param name2 name of second element
          *  @param fn A callback function that is used to decide if collisions are allowed between the two elements is filled
          * here */
-        bool getAllowedCollision(const std::string& name1, const std::string& name2, DecideContactFn& fn) const;
+        bool getAllowedCollision(const std::string &name1, const std::string &name2, DecideContactFn &fn) const;
 
         /** @brief Get the type of the allowed collision between two elements. Return true if the entry is included in the
          * collision matrix or if
@@ -217,11 +217,11 @@ namespace collision_detection {
          *  @param name1 name of first element
          *  @param name2 name of second element
          *  @param allowed_collision The allowed collision type will be filled here */
-        bool getAllowedCollision(const std::string& name1, const std::string& name2,
-                                 AllowedCollision::Type& allowed_collision) const;
+        bool getAllowedCollision(const std::string &name1, const std::string &name2,
+                                 AllowedCollision::Type &allowed_collision) const;
 
         /** @brief Print the allowed collision matrix */
-        void print(std::ostream& out) const;
+        void print(std::ostream &out) const;
 
     private:
         std::map <std::string, std::map<std::string, AllowedCollision::Type>> entries_;

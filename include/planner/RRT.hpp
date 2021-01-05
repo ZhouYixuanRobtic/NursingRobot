@@ -15,10 +15,10 @@ namespace planner {
     protected:
         std::deque<Vertex<T>, Eigen::aligned_allocator<Vertex<T>>> _nodes;
 
-        std::unordered_map<T, Vertex<T>*, std::function<size_t(T)>, std::equal_to<T>,
-                Eigen::aligned_allocator<std::pair<T, Vertex<T>*>>> _node_map;
+        std::unordered_map<T, Vertex<T> *, std::function<size_t(T)>, std::equal_to<T>,
+                Eigen::aligned_allocator<std::pair<T, Vertex<T> *>>> _node_map;
 
-        Vertex<T>* _tail;
+        Vertex<T> *_tail;
         T _start, _goal;
 
         bool _forward;
@@ -37,16 +37,16 @@ namespace planner {
 
         bool _is_ASC_enabled{};
 
-        const Eigen::MatrixX2d* _bounds_ptr;
+        const Eigen::MatrixX2d *_bounds_ptr;
 
         std::shared_ptr<flann::Index<flann::L2_Simple<double>>> _kd_tree{};
 
-        std::function<T(double*)> _arrayToT;
+        std::function<T(double *)> _arrayToT;
 
-        std::function<void(T, double*)> TToArray_;
+        std::function<void(T, double *)> TToArray_;
 
 
-        virtual Vertex<T>* _nearest(const T& current_state, double* distance_out)
+        virtual Vertex<T> *_nearest(const T &current_state, double *distance_out)
         {
             //K-NN search
             std::vector<double> data(_dimensions);
@@ -72,7 +72,7 @@ namespace planner {
             return _node_map[point];
         }
 
-        virtual Vertex<T>* _steer(const T& rand_state, Vertex<T>* source)
+        virtual Vertex<T> *_steer(const T &rand_state, Vertex<T> *source)
         {
             double distance = _step_len;
             if (!source) {
@@ -89,11 +89,11 @@ namespace planner {
 
             _nodes.template emplace_back(intermediate_state, source, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
-            _node_map.insert(std::pair<T, Vertex<T>*>(intermediate_state, &_nodes.back()));
+            _node_map.insert(std::pair<T, Vertex<T> *>(intermediate_state, &_nodes.back()));
             return &_nodes.back();
         }
 
-        bool _isGoalReached(Vertex<T>* node_end)
+        bool _isGoalReached(Vertex<T> *node_end)
         {
             if (_step_len > 1 && _goal_max_dist < 1) {
                 throw std::invalid_argument(
@@ -111,22 +111,23 @@ namespace planner {
 
         virtual T _sample()
         {
-            return randomState<T>(_bounds_ptr, _dimensions);
+            std::shared_ptr<T> sample_ptr(std::make_shared<T>(randomState<T>(_dimensions, _bounds_ptr)));
+            return *sample_ptr.get();
         }
 
-        virtual bool _collision_check(const T& from, const T& to)
+        virtual bool _collision_check(const T &from, const T &to)
         { return true; };
 
-        virtual void _extract_path(std::vector<T, Eigen::aligned_allocator<T>>& vectorOut, bool reverse)
+        virtual void _extract_path(std::vector<T, Eigen::aligned_allocator<T>> &vectorOut, bool reverse)
         {
-            const Vertex<T>* vertex = _tail;
+            const Vertex<T> *vertex = _tail;
             if (reverse) {
                 while (vertex) {
                     vectorOut.template emplace_back(vertex->state());
                     vertex = vertex->parent();
                 }
             } else {
-                std::vector<const Vertex<T>*> vertexes;
+                std::vector<const Vertex<T> *> vertexes;
                 while (vertex) {
                     vertexes.template emplace_back(vertex);
                     vertex = vertex->parent();
@@ -141,13 +142,13 @@ namespace planner {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-        RRT(const RRT<T>&) = delete;
+        RRT(const RRT<T> &) = delete;
 
-        RRT& operator=(const RRT<T>&) = delete;
+        RRT &operator=(const RRT<T> &) = delete;
 
-        RRT(const T& start, const T& goal, std::function<size_t(T)> hashT, int dimensions, bool forward = true,
-            std::function<T(double*)> arrayToT = NULL,
-            std::function<void(T, double*)> TToArray = NULL)
+        RRT(const T &start, const T &goal, std::function<size_t(T)> hashT, int dimensions, bool forward = true,
+            std::function<T(double *)> arrayToT = NULL,
+            std::function<void(T, double *)> TToArray = NULL)
                 : _start(start), _goal(goal), _dimensions(dimensions), _node_map(20, hashT)
         {
             _d_min = planner::distance(start, goal);
@@ -210,7 +211,7 @@ namespace planner {
         { _is_ASC_enabled = checked; }
 
 
-        const Vertex<T>* RootVertex() const
+        const Vertex<T> *RootVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -218,26 +219,26 @@ namespace planner {
         }
 
 
-        const Vertex<T>* LastVertex() const
+        const Vertex<T> *LastVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
             return &_nodes.back();
         }
 
-        const T& GoalState() const
+        const T &GoalState() const
         { return _goal; }
 
-        void setGoalState(const T& goalState)
+        void setGoalState(const T &goalState)
         { _goal = goalState; }
 
         Eigen::MatrixX2d SampleBounds() const
         { return *_bounds_ptr; }
 
-        void setSampleBounds(const Eigen::MatrixX2d* bounds_ptr)
+        void setSampleBounds(const Eigen::MatrixX2d *bounds_ptr)
         { _bounds_ptr = bounds_ptr; }
 
-        const T& startState() const
+        const T &startState() const
         {
             if (_nodes.empty())
                 throw std::logic_error("No start state specified for RRT");
@@ -245,12 +246,12 @@ namespace planner {
                 return RootVertex()->state();
         }
 
-        void setStartState(const T& startState)
+        void setStartState(const T &startState)
         {
             reset(true);
             // create root node from provided start state
             _nodes.template emplace_back(startState, nullptr, _dimensions, TToArray_);
-            _node_map.insert(std::pair<T, Vertex<T>*>(startState, &_nodes.back()));
+            _node_map.insert(std::pair<T, Vertex<T> *>(startState, &_nodes.back()));
             _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
         }
 
@@ -266,7 +267,7 @@ namespace planner {
                 _node_map.clear();
                 _nodes.clear();
                 _nodes.template emplace_back(root, nullptr, _dimensions, TToArray_);
-                _node_map.insert(std::pair<T, Vertex<T>*>(root, &_nodes.back()));
+                _node_map.insert(std::pair<T, Vertex<T> *>(root, &_nodes.back()));
                 _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
             }
         }
@@ -275,7 +276,7 @@ namespace planner {
         {
             setStartState(_start);
             for (int i = 0; i < MaxIterations(); ++i) {
-                Vertex<T>* new_vertex;
+                Vertex<T> *new_vertex;
                 double r = rand() /
                            (double) RAND_MAX;
                 if (r < GoalBias())
