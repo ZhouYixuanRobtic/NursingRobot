@@ -280,29 +280,8 @@ namespace state_space {
 
         SE3 random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override
         {
-            if (bounds_ptr == nullptr) {
-                return SE3(SO3().random(randomEngine, nullptr),
-                           Rn::temp(3).random(randomEngine, nullptr).Vector());
-            }
-            /**
-             * \noted: bounds must be twist format 6X1 [w,v];
-             * */
-            auto upper_bound = SE3(R6(bounds_ptr->col(0)));
-            auto lower_bound = SE3(R6(bounds_ptr->col(1)));
-            Eigen::MatrixX2d bound_for_translation;
-            bound_for_translation.resize(3, 2);
-            bound_for_translation << upper_bound.translationPart(), lower_bound.translationPart();
-            SE3 uniformly_sampled_result;
-            double length = upper_bound.distance(lower_bound);
-            double sampled_upper_distance{std::numeric_limits<double>::max()},
-                    sampled_lower_distance{std::numeric_limits<double>::max()};
-            while (sampled_lower_distance > length || sampled_upper_distance > length) {
-                uniformly_sampled_result = SE3(SO3::temp().random(randomEngine, nullptr),
-                                               Rn::temp(3).random(randomEngine, &bound_for_translation).Vector());
-                sampled_upper_distance = upper_bound.distance(uniformly_sampled_result);
-                sampled_lower_distance = lower_bound.distance(uniformly_sampled_result);
-            }
-            return uniformly_sampled_result;
+            return SE3(SO3().random(randomEngine, nullptr),
+                       Rn::temp(3).random(randomEngine, bounds_ptr).Vector());
         };
 
         double distance(const SE3 &to) const override

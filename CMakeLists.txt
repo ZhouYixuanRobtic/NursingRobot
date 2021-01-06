@@ -1,17 +1,26 @@
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.0.2)
 project(NursingRobot)
 
-set(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_CXX_STANDARD 11)
 # include cmake files in the 'cmake folder'
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 FIND_PACKAGE(OpenMP REQUIRED)
 if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif ()
+add_compile_options(-std=c++11)
+
+
+find_package(catkin REQUIRED COMPONENTS
+        geometry_msgs roscpp rospy std_msgs
+        interactive_markers moveit_core moveit_visual_tools moveit_ros_planning moveit_ros_planning_interface
+        pluginlib geometric_shapes pcl_ros pcl_conversions rosbag tf2_ros tf2_eigen tf2_geometry_msgs
+)
 
 find_package(Eigen3 REQUIRED)
 # Eigen 3.2 (Wily) only provides EIGEN3_INCLUDE_DIR, not EIGEN3_INCLUDE_DIRS
@@ -32,18 +41,33 @@ find_package(fcl REQUIRED)
 find_package(Flann REQUIRED)
 add_library(Flann STATIC IMPORTED)
 
+#glog
+include(./cmake/glog.cmake)
+
+catkin_package()
+
+
+###########
+## Build ##
+###########
+
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
 include_directories(
         SYSTEM
         include
+        ${catkin_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIR}
         ${EIGEN3_INCLUDE_DIRS}
-        ${YAML_INCLUDE_DIRS}
         ${FCL_INCLUDE_DIRS}
-
+        ${GLOG_INCLUDE_DIRS}
 )
 link_directories(
         /user/local/lib
         ${YAML_LIBRARIES}
         ${FCL_LIBRARIES}
+        ${catkin_LIBRARY_DIRS}
+        ${GLOG_LIBRARIES}
 )
 
 set(lib_SRC
@@ -57,13 +81,8 @@ add_library("StateSpace" STATIC ${lib_SRC})
 
 set(lib_RM
         include/RobotModel/RobotModel.h
-        include/RobotModel/joint_model.h
-        include/RobotModel/link_model.h
-        include/RobotModel/aabb.h
-        src/RobotModel/joint_model.cpp
-        src/RobotModel/link_model.cpp
         src/RobotModel/RobotModel.cpp
-        src/RobotModel/aabb.cpp)
+        )
 
 add_library(Kinematics src/Kinematics/Kinematics.cpp include/Kinematics/custom_kinematics.hpp)
 target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES})
@@ -77,16 +96,18 @@ target_link_libraries(PlanningInterface StateSpace Kinematics)
 add_library(RobotModel ${lib_RM})
 target_link_libraries(RobotModel Kinematics StateSpace ${YAML_LIBRARIES})
 
+add_library(collision_helper src/collision_detection/MoveItCollisionHelper.cpp)
+target_link_libraries(collision_helper Kinematics StateSpace ${catkin_LIBRARIES})
 
 #executale
 add_executable(NursingRobot src/main.cpp)
-target_link_libraries(NursingRobot)
+target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper StateSpace)
 
 add_executable(6dTest test/6d_rrt_test.cpp)
 target_link_libraries(6dTest StateSpace RRT)
 
 add_executable(kTest test/kinematics_test.cpp)
-target_link_libraries(kTest StateSpace Kinematics)
+target_link_libraries(kTest StateSpace Kinematics )
 
 add_executable(RTest test/robot_model_test.cpp)
 target_link_libraries(RTest StateSpace Kinematics RobotModel)

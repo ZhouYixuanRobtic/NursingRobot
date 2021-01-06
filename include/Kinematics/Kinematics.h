@@ -153,6 +153,9 @@ namespace kinematics {
         bool allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose,
                                  const state_space::JointSpace *reference_ptr);
 
+        state_space::vector_JointSpace allValidIKSolutions(const state_space::SE3 &desired_pose,
+                                        const state_space::JointSpace *reference_ptr);
+
         /**@brief computes jacobian matrix with respect to space frame*/
         Eigen::MatrixXd jacobianSpace(const state_space::JointSpace &joint_angles);
 

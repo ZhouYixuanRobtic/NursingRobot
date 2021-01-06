@@ -14,13 +14,12 @@ int main(int argc, char** argv)
     auto start_state = planner::randomState<SPCIFIC_STATE>();
     auto goal_state = planner::randomState<SPCIFIC_STATE>();
 
-    std::shared_ptr<planner::RRT<SPCIFIC_STATE>> rrt_2d = std::make_shared<planner::RRT<SPCIFIC_STATE>>(start_state,
-                                                                                                        goal_state,
-                                                                                                        planner::hash<SPCIFIC_STATE>,
+    std::shared_ptr<planner::RRT<SPCIFIC_STATE>> rrt_2d = std::make_shared<planner::RRT<SPCIFIC_STATE>>(planner::hash<SPCIFIC_STATE>,
                                                                                                         start_state.Dimensions());
 
 
     rrt_2d->setStepLen(0.01);
+    rrt_2d->constructPlan(start_state,goal_state);
     clock_t start(clock());
     if (rrt_2d->planning()) {
         clock_t end(clock());

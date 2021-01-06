@@ -33,3 +33,5 @@
 
 #cmake files
 cmake-build-debug/*
+
+log/*

@@ -9,7 +9,7 @@
 #include "planner/Planner.hpp"
 
 int main() {
-    state_space::R6 temp_twist = planner::randomState<state_space::Rn>(nullptr, 6).Vector();
+    state_space::R6 temp_twist = planner::randomState<state_space::Rn>(6, nullptr).Vector();
     state_space::SE3 A(temp_twist);
     kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
 
@@ -25,7 +25,7 @@ int main() {
     const double zero_thresh = 1e-3;
     double nearest_time = 0, all_time = 0;
     for (size_t index = 0; index < max_iterations; ++index) {
-        auto test_joint = planner::randomState<state_space::JointSpace>(&bounds_for_aubo, 6);
+        auto test_joint = planner::randomState<state_space::JointSpace>( 6,&bounds_for_aubo);
 
         auto desired_pose = aubo_i5_kinematics.fk(test_joint);
         auto refer_joint = test_joint;

@@ -215,35 +215,24 @@ namespace state_space {
         {
             //Effective Sampling and Distance Metrics for 3D Rigid Body Path Planning [c]
             //James J. Kuffner
-            if (!bounds_ptr) {
-                //use the uniformly sampling unit Quaternion
-                std::uniform_real_distribution<double> x_distribution(0, 1);
-                /*here we use convention of XYZ YPR.
-                double roll,pitch,yaw;
-                yaw = 2*M_PI*x_distribution(randomEngine)-M_PI;
-                pitch = std::acos(1-2*x_distribution(randomEngine))-M_PI_2;
-                roll = 2*M_PI*x_distribution(randomEngine)-M_PI;*/
-                //uniformly sampling using unit quaternions;
-                double s = x_distribution(randomEngine);
-                double sigma1 = std::sqrt(1 - s);
-                double sigma2 = std::sqrt(s);
-                double theta1, theta2;
-                theta1 = 2 * M_PI * x_distribution(randomEngine);
-                theta2 = 2 * M_PI * x_distribution(randomEngine);
-                Eigen::Vector4d random_quaternion{sin(theta1) * sigma1, cos(theta1) * sigma1, sin(theta2) * sigma2,
-                                                  cos(theta2) * sigma2};
-                return SO3(random_quaternion);
-            }
-            double length = SO3(R3(bounds_ptr->col(0))).distance(SO3(R3(bounds_ptr->col(1))));
-            double sampled_upper_distance{std::numeric_limits<double>::max()},
-                    sampled_lower_distance{std::numeric_limits<double>::max()};
-            SO3 uniformly_sampled_temp_result;
-            while (sampled_upper_distance > length || sampled_lower_distance > length) {
-                uniformly_sampled_temp_result = random(randomEngine, nullptr);
-                sampled_upper_distance = SO3(R3(bounds_ptr->col(0))).distance(uniformly_sampled_temp_result);
-                sampled_lower_distance = SO3(R3(bounds_ptr->col(1))).distance(uniformly_sampled_temp_result);
-            }
-            return uniformly_sampled_temp_result;
+            //use the uniformly sampling unit Quaternion
+            std::uniform_real_distribution<double> x_distribution(0, 1);
+            /*here we use convention of XYZ YPR.
+            double roll,pitch,yaw;
+            yaw = 2*M_PI*x_distribution(randomEngine)-M_PI;
+            pitch = std::acos(1-2*x_distribution(randomEngine))-M_PI_2;
+            roll = 2*M_PI*x_distribution(randomEngine)-M_PI;*/
+            //uniformly sampling using unit quaternions;
+            double s = x_distribution(randomEngine);
+            double sigma1 = std::sqrt(1 - s);
+            double sigma2 = std::sqrt(s);
+            double theta1, theta2;
+            theta1 = 2 * M_PI * x_distribution(randomEngine);
+            theta2 = 2 * M_PI * x_distribution(randomEngine);
+            Eigen::Vector4d random_quaternion{sin(theta1) * sigma1, cos(theta1) * sigma1, sin(theta2) * sigma2,
+                                              cos(theta2) * sigma2};
+            return SO3(random_quaternion);
+
         };
 
         double distance(const SO3 &to) const override

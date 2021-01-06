@@ -4,6 +4,10 @@ aubo_i5:
   #the first three numbers are position, the last four numbers are unit quaternion
   home_configuration: [-0.000, 0.2155, 0.8865,0.000, 0.70710678, 0.70710678,0.0]
 
+  mount_configuration: [0.000, 0.000, 0.122,0,0,1,0]
+
+  ee_configuration: [-0.0405, 0.0, 0.14775,0.000, -0.000, 0.70710678, 0.70710678]
+
   #is the screw axes presented in body frame
   isInBodyFrame: false
 

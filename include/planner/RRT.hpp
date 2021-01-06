@@ -13,15 +13,19 @@ namespace planner {
     template<typename T>
     class RRT {
     protected:
-        std::deque<Vertex<T>, Eigen::aligned_allocator<Vertex<T>>> _nodes;
+        std::deque<Vertex < T>, Eigen::aligned_allocator<Vertex < T>>>
+        _nodes;
 
-        std::unordered_map<T, Vertex<T> *, std::function<size_t(T)>, std::equal_to<T>,
-                Eigen::aligned_allocator<std::pair<T, Vertex<T> *>>> _node_map;
+        std::unordered_map<T, Vertex < T> *, std::function<size_t(T)>, std::equal_to<T>,
+        Eigen::aligned_allocator<std::pair<T, Vertex < T> *>>>
+        _node_map;
 
-        Vertex<T> *_tail;
+        Vertex <T> *_tail;
         T _start, _goal;
 
         bool _forward;
+
+        bool _have_start;
 
         const int _dimensions;
 
@@ -45,8 +49,9 @@ namespace planner {
 
         std::function<void(T, double *)> TToArray_;
 
+        std::function<bool(const T &, const T &)> _state_validate_func;
 
-        virtual Vertex<T> *_nearest(const T &current_state, double *distance_out)
+        virtual Vertex <T> *_nearest(const T &current_state, double *distance_out)
         {
             //K-NN search
             std::vector<double> data(_dimensions);
@@ -72,7 +77,7 @@ namespace planner {
             return _node_map[point];
         }
 
-        virtual Vertex<T> *_steer(const T &rand_state, Vertex<T> *source)
+        virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source)
         {
             double distance = _step_len;
             if (!source) {
@@ -85,7 +90,7 @@ namespace planner {
             T intermediate_state = planner::extend(source->state(), rand_state, steer_length);
             T from = _forward ? source->state() : intermediate_state,
                     to = _forward ? intermediate_state : source->state();
-            if (!_collision_check(from, to)) return nullptr;
+            if (!_isStateValid(from, to)) return nullptr;
 
             _nodes.template emplace_back(intermediate_state, source, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
@@ -93,7 +98,7 @@ namespace planner {
             return &_nodes.back();
         }
 
-        bool _isGoalReached(Vertex<T> *node_end)
+        bool _isGoalReached(Vertex <T> *node_end)
         {
             if (_step_len > 1 && _goal_max_dist < 1) {
                 throw std::invalid_argument(
@@ -115,8 +120,13 @@ namespace planner {
             return *sample_ptr.get();
         }
 
-        virtual bool _collision_check(const T &from, const T &to)
-        { return true; };
+        virtual bool _isStateValid(const T &from, const T &to)
+        {
+            if (_state_validate_func)
+                return _state_validate_func(from, to);
+            else
+                return true;
+        };
 
         virtual void _extract_path(std::vector<T, Eigen::aligned_allocator<T>> &vectorOut, bool reverse)
         {
@@ -146,12 +156,15 @@ namespace planner {
 
         RRT &operator=(const RRT<T> &) = delete;
 
-        RRT(const T &start, const T &goal, std::function<size_t(T)> hashT, int dimensions, bool forward = true,
+        RRT(std::function<size_t(T)> hashT, int dimensions, bool forward = true,
             std::function<T(double *)> arrayToT = NULL,
             std::function<void(T, double *)> TToArray = NULL)
-                : _start(start), _goal(goal), _dimensions(dimensions), _node_map(20, hashT)
+                : _dimensions(dimensions),
+                  _node_map(20, hashT),
+                  _state_validate_func(NULL),
+                  _d_min(0.1),
+                  _have_start(false)
         {
-            _d_min = planner::distance(start, goal);
             _bounds_ptr = nullptr;
             _kd_tree = std::make_shared<flann::Index<flann::L2_Simple<double>>>(flann::KDTreeSingleIndexParams());
             _forward = forward;
@@ -210,8 +223,12 @@ namespace planner {
         void setASCEnabled(bool checked)
         { _is_ASC_enabled = checked; }
 
+        void setStateValidator(std::function<bool(const T &, const T &)> state_validate_func)
+        {
+            _state_validate_func = state_validate_func;
+        }
 
-        const Vertex<T> *RootVertex() const
+        const Vertex <T> *RootVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -219,7 +236,7 @@ namespace planner {
         }
 
 
-        const Vertex<T> *LastVertex() const
+        const Vertex <T> *LastVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -253,6 +270,7 @@ namespace planner {
             _nodes.template emplace_back(startState, nullptr, _dimensions, TToArray_);
             _node_map.insert(std::pair<T, Vertex<T> *>(startState, &_nodes.back()));
             _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
+            _start = startState;
         }
 
         void reset(bool eraseRoot = false)
@@ -272,9 +290,15 @@ namespace planner {
             }
         }
 
+        void constructPlan(const T &start, const T &goal)
+        {
+            setStartState(start);
+            _goal = goal;
+            _d_min = planner::distance(start, goal);
+        }
+
         virtual bool planning()
         {
-            setStartState(_start);
             for (int i = 0; i < MaxIterations(); ++i) {
                 Vertex<T> *new_vertex;
                 double r = rand() /

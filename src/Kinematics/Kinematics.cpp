@@ -31,9 +31,14 @@ void Kinematics::_loadModel(const std::string &yaml_name)
     YAML::Node doc = YAML::LoadFile(yaml_name);
     try {
         std::vector<double> pose_with_quaternion = doc["aubo_i5"]["home_configuration"].as<std::vector<double>>();
-        Eigen::Matrix<double, 7, 1> home_pose;
-        memcpy(home_pose.data(), pose_with_quaternion.data(), pose_with_quaternion.size() * sizeof(double));
-        home_configuration_ = state_space::SE3(home_pose);
+        home_configuration_ = state_space::SE3(pose_with_quaternion);
+
+        pose_with_quaternion = doc["aubo_i5"]["mount_configuration"].as<std::vector<double>>();
+        mount_configuration_ = state_space::SE3(pose_with_quaternion);
+
+        pose_with_quaternion = doc["aubo_i5"]["ee_configuration"].as<std::vector<double>>();
+        ee_configuration_ = state_space::SE3(pose_with_quaternion);
+
         IN_BODY_ = doc["aubo_i5"]["isInBodyFrame"].as<bool>();
         std::map<std::string, std::vector<double>> axes_map;
         axes_map = doc["aubo_i5"]["screw_axes"].as<std::map<std::string, std::vector<double>>>();
@@ -188,6 +193,19 @@ bool Kinematics::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const sta
     }
     return joint_solutions.cols() != 0;
 
+}
+
+state_space::vector_JointSpace
+Kinematics::allValidIKSolutions(const state_space::SE3 &desired_pose, const state_space::JointSpace *reference_ptr)
+{
+    state_space::vector_JointSpace result{};
+    Eigen::MatrixXd joint_solutions;
+    if(allValidIkSolutions(joint_solutions,desired_pose.SE3Matrix(),reference_ptr)){
+       for(int i=0; i<joint_solutions.cols(); ++i){
+           result.emplace_back(state_space::JointSpace(joint_solutions.col(i)));
+       }
+    }
+    return result;
 }
 
 state_space::JointSpace

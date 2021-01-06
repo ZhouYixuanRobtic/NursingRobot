@@ -52,6 +52,17 @@ namespace planner {
                                                                                                           bounds_ptr);
     }
 
+    template<>
+     state_space::SE3 randomState(int dimensions, const Eigen::MatrixX2d *bounds_ptr)
+    {
+        static std::random_device rd;
+        static std::default_random_engine randomEngine(rd());
+        if (bounds_ptr != nullptr && bounds_ptr->rows() != 3) {
+            throw std::invalid_argument("only bound translation part");
+        }
+        return  state_space::SE3::temp().random(randomEngine, bounds_ptr);
+    }
+
     /**
      * Finds a state in the direction of @target from @source.state().
      * @param lambda The relative normalized distance from @source, which must
