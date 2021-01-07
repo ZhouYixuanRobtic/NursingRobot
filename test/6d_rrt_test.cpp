@@ -1,5 +1,3 @@
-#define EIGEN_MKL_USE_ALL
-
 #include "StateSpace/JointSpace.hpp"
 #include "StateSpace/rn.hpp"
 #include "StateSpace/SE3.hpp"
@@ -9,7 +7,20 @@
 
 int main(int argc, char** argv)
 {
-    using SPCIFIC_STATE = state_space::SE3;
+    Eigen::MatrixXd A,B;
+    A.resize(10000,10000);
+    B.resize(10000,10000);
+    A.setRandom();
+    B.setRandom();
+    Eigen::MatrixXd c;
+    c.resize(10000,10000);
+    c.setZero();
+    clock_t start(clock());
+    c.noalias() += A*B;
+    clock_t end(clock());
+    std::cout<<1E6*(double)(end-start)/CLOCKS_PER_SEC<<std::endl;
+
+    /*using SPCIFIC_STATE = state_space::SE3;
     int dimensions = 6;
     auto start_state = planner::randomState<SPCIFIC_STATE>();
     auto goal_state = planner::randomState<SPCIFIC_STATE>();
@@ -28,5 +39,5 @@ int main(int argc, char** argv)
         for (const auto& it: path) {
             std::cout << it << std::endl;
         }
-    }
+    }*/
 }

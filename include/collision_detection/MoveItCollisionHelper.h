@@ -34,9 +34,12 @@ namespace my_collision_detection {
         kinematics::KinematicsPtr _kinematics_ptr;
 
         robot_model::JointModelGroup* _joint_model_group_ptr;
+
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        MoveItCollisionHelper(const std::string &yaml_name, const std::string &group_name);
+        MoveItCollisionHelper(const std::string &yaml_name,
+                              const std::string &group_name,
+                              const kinematics::analytical_ik_handled_t &analytical_ik_func = nullptr);
 
         ~MoveItCollisionHelper() = default;
 
@@ -58,7 +61,20 @@ namespace my_collision_detection {
             return result;
         }
 
+        const kinematics::KinematicsPtr & getKinematicsPtr() const
+        {
+            return _kinematics_ptr;
+        }
 
+        state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
+                                                         const state_space::JointSpace *reference_ptr,
+                                                         bool check_collision = true) const;
+
+        bool nearestSolution(state_space::JointSpace& solution,
+                             ,const state_space::SE3 &desired_pose,
+                             const state_space::JointSpace &reference,
+                             bool isConsecutive = true,
+                             bool check_collision = true) const ;
 
     };
 }

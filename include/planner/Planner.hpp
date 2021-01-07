@@ -53,14 +53,14 @@ namespace planner {
     }
 
     template<>
-     state_space::SE3 randomState(int dimensions, const Eigen::MatrixX2d *bounds_ptr)
+    state_space::SE3 randomState(int dimensions, const Eigen::MatrixX2d *bounds_ptr)
     {
         static std::random_device rd;
         static std::default_random_engine randomEngine(rd());
         if (bounds_ptr != nullptr && bounds_ptr->rows() != 3) {
             throw std::invalid_argument("only bound translation part");
         }
-        return  state_space::SE3::temp().random(randomEngine, bounds_ptr);
+        return state_space::SE3::temp().random(randomEngine, bounds_ptr);
     }
 
     /**
@@ -118,6 +118,28 @@ namespace planner {
                  target * (1 * pow(lambda, 5) * pow((1 - lambda), 5 - 5));
         return result;
     }
+
+    static state_space::SO3 sphereInterpolate(const state_space::SO3 &source,
+                                              const state_space::SO3 &target,
+                                              double lambda)
+    {
+        Eigen::Quaterniond start_quaternion(source.Quaternion());
+        auto temp_quaternion = start_quaternion.slerp(lambda,Eigen::Quaterniond(target.Quaternion));
+        return state_space::SO3(temp_quaternion.coeffs());
+    }
+    /**
+     * \brief compact interpolate for SE3
+     * */
+    static state_space::SE3 sphereInterpolate(const state_space::SE3 &source,
+                                              const state_space::SE3 &target,
+                                              double lambda)
+    {
+        auto temp_translation = interpolate(source.translationPart(), target.translationPart(), lambda);
+        auto temp_SO3 = sphereInterpolate(source.SO3part(),target.SO3part());
+        return state_space::SE3(temp_SO3, temp_translation);
+    }
+
+
 
     /**
      * @brief Calculate the distance between two states

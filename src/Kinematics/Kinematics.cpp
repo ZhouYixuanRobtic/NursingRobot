@@ -7,11 +7,11 @@
 
 using namespace kinematics;
 
-Kinematics::Kinematics(const std::string &yaml_name)
+Kinematics::Kinematics(const std::string &yaml_name, const analytical_ik_handled_t &analytical_ik_fuck)
 {
     ee_configuration_ = state_space::SE3();
     mount_configuration_ = state_space::SE3();
-    analytical_ik_func_ = nullptr;
+    analytical_ik_func_ = analytical_ik_fuck;
     _loadModel(yaml_name);
 }
 
@@ -40,6 +40,11 @@ void Kinematics::_loadModel(const std::string &yaml_name)
         ee_configuration_ = state_space::SE3(pose_with_quaternion);
 
         IN_BODY_ = doc["aubo_i5"]["isInBodyFrame"].as<bool>();
+
+        _EE_NAME = doc["aubo_i5"]["ee_name"].as<std::string>();
+
+        _BASE_NAME = doc["aubo_i5"]["base_name"].as<std::string>();
+
         std::map<std::string, std::vector<double>> axes_map;
         axes_map = doc["aubo_i5"]["screw_axes"].as<std::map<std::string, std::vector<double>>>();
 
@@ -54,13 +59,32 @@ void Kinematics::_loadModel(const std::string &yaml_name)
                 all_screw_axes_.emplace_back(state_space::SE3(temp_twist));
             }
         }
+
+        auto &config_map = axes_map;
+        axes_map.clear();
+        config_map = doc["aubo_i5"]["joint_configuration"].as<std::map<std::string, std::vector<double>>>();
+
+        for (const auto &it : config_map) {
+            if (it.second.size() != 7) {
+                char buf[100];
+                sprintf(buf, "wrong pose, should have 7 elements but have %d elements", (int) it.second.size());
+                throw std::invalid_argument(buf);
+            } else {
+                Eigen::Matrix<double, 7, 1> temp_pose;
+                memcpy(temp_pose.data(), it.second.data(), temp_pose.size() * sizeof(double));
+                _joint_configurations.insert(std::make_pair(it.first, state_space::SE3(temp_pose)));
+            }
+        }
+
+        _link_joint_map = doc["aubo_i5"]["link_names"].as<std::unordered_map<std::string, std::string>>();
+
     }
-    catch (YAML::InvalidScalar) {
-        perror("tagParam.yaml is invalid.");
+    catch (const std::exception &e) {
+        std::cout << e.what() << std::endl;
     }
 }
 
-state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace &joint_angles)
+state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace &joint_angles) const
 {
     state_space::SE_3 ee_pose{state_space::SE_3::Identity()};
     for (int i = 0; i < joint_angles.size(); ++i) {
@@ -70,7 +94,7 @@ state_space::SE_3 Kinematics::_fkInSpace(const state_space::JointSpace &joint_an
     return ee_pose;
 }
 
-state_space::SE_3 Kinematics::_fkInBody(const state_space::JointSpace &joint_angles)
+state_space::SE_3 Kinematics::_fkInBody(const state_space::JointSpace &joint_angles) const
 {
     state_space::SE_3 ee_pose{home_configuration_.SE3Matrix()};
     for (int i = 0; i < joint_angles.size(); ++i) {
@@ -195,19 +219,6 @@ bool Kinematics::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const sta
 
 }
 
-state_space::vector_JointSpace
-Kinematics::allValidIKSolutions(const state_space::SE3 &desired_pose, const state_space::JointSpace *reference_ptr)
-{
-    state_space::vector_JointSpace result{};
-    Eigen::MatrixXd joint_solutions;
-    if(allValidIkSolutions(joint_solutions,desired_pose.SE3Matrix(),reference_ptr)){
-       for(int i=0; i<joint_solutions.cols(); ++i){
-           result.emplace_back(state_space::JointSpace(joint_solutions.col(i)));
-       }
-    }
-    return result;
-}
-
 state_space::JointSpace
 Kinematics::nearestIkSolution(const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference,
                               bool isConsecutive)
@@ -249,4 +260,35 @@ Kinematics::directedNearestIkSolution(const state_space::SE_3 &desired_pose, con
         return state_space::JointSpace(joint_solutions.col(
                 std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end()))));
     }
+}
+
+Kinematics::joint_transform_map
+Kinematics::getLinksTransform(const state_space::JointSpace &joint_angles) const
+{
+    joint_transform_map result;
+    state_space::SE3 temp_SE3 = mount_configuration_;
+    for (auto it = _joint_configurations.begin(); it != _joint_configurations.end(); it++) {
+        size_t i = std::distance(_joint_configurations.begin(), it);
+        temp_SE3 = temp_SE3 + _single_axis(joint_angles[i]) + it->second;
+        result.insert(std::make_pair(it->first, temp_SE3));
+    }
+    return result;
+}
+
+bool
+Kinematics::getLinkTransform(state_space::SE3 &LinkTransform, const std::string &link_name,
+                             const state_space::JointSpace &joint_angles) const
+{
+    if (link_name == _EE_NAME) {
+        LinkTransform = fk(joint_angles);
+        return true;
+    } else if (link_name == _BASE_NAME) {
+        LinkTransform = state_space::SE3::temp();
+        return true;
+    } else if (_link_joint_map.find(link_name) != _link_joint_map.end()) {
+        joint_transform_map result = getLinksTransform(joint_angles);
+        LinkTransform = result.find(_link_joint_map.find(link_name)->second)->second;
+        return true;
+    } else
+        return false;
 }

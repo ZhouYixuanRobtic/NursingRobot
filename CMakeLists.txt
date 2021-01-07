@@ -6,7 +6,7 @@ SET(CMAKE_CXX_STANDARD 11)
 # include cmake files in the 'cmake folder'
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
 FIND_PACKAGE(OpenMP REQUIRED)
 if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -15,6 +15,8 @@ if (OPENMP_FOUND)
 endif ()
 add_compile_options(-std=c++11)
 
+set(MKL_INCLUDE_DIRS "/opt/intel/oneapi/mkl/latest/include")
+set(MKL_LIB_DIRS "/opt/intel/oneapi/mkl/latest/lib/intel64")
 
 find_package(catkin REQUIRED COMPONENTS
         geometry_msgs roscpp rospy std_msgs
@@ -61,6 +63,7 @@ include_directories(
         ${EIGEN3_INCLUDE_DIRS}
         ${FCL_INCLUDE_DIRS}
         ${GLOG_INCLUDE_DIRS}
+        ${MKL_INCLUDE_DIRS}
 )
 link_directories(
         /user/local/lib
@@ -68,6 +71,7 @@ link_directories(
         ${FCL_LIBRARIES}
         ${catkin_LIBRARY_DIRS}
         ${GLOG_LIBRARIES}
+        ${MKL_LIB_DIRS}
 )
 
 set(lib_SRC
@@ -79,11 +83,6 @@ set(lib_SRC
 
 add_library("StateSpace" STATIC ${lib_SRC})
 
-set(lib_RM
-        include/RobotModel/RobotModel.h
-        src/RobotModel/RobotModel.cpp
-        )
-
 add_library(Kinematics src/Kinematics/Kinematics.cpp include/Kinematics/custom_kinematics.hpp)
 target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES})
 
@@ -93,18 +92,19 @@ target_link_libraries(RRT StateSpace Kinematics)
 add_library(PlanningInterface src/planner/PlanningInterface.cpp)
 target_link_libraries(PlanningInterface StateSpace Kinematics)
 
-add_library(RobotModel ${lib_RM})
-target_link_libraries(RobotModel Kinematics StateSpace ${YAML_LIBRARIES})
 
 add_library(collision_helper src/collision_detection/MoveItCollisionHelper.cpp)
 target_link_libraries(collision_helper Kinematics StateSpace ${catkin_LIBRARIES})
+
+add_library(cartesianPlanner src/planner/CartesianPlanner.cpp)
+target_link_libraries(cartesianPlanner Kinematics collision_helper StateSpace)
 
 #executale
 add_executable(NursingRobot src/main.cpp)
 target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper StateSpace)
 
 add_executable(6dTest test/6d_rrt_test.cpp)
-target_link_libraries(6dTest StateSpace RRT)
+target_link_libraries(6dTest StateSpace RRT -I${MKL_LIB_DIRS})
 
 add_executable(kTest test/kinematics_test.cpp)
 target_link_libraries(kTest StateSpace Kinematics )
