@@ -241,7 +241,11 @@ namespace state_space {
 
         SE3 operator()(double theta) const override
         {
-            R6 temp_twist(this->Axis() * theta);
+            R6 temp_twist;
+            temp_twist.setZero();
+            if(!NearZero(this->_twist_3d_.norm()))
+                temp_twist = state_space::R6(this->Axis() * theta);
+
             return SE3(temp_twist);
         };
 
@@ -257,7 +261,7 @@ namespace state_space {
             return _twist_3d_ == other._twist_3d_;
         }
 
-        static SE3 temp(unsigned int dimensions = 6)
+        static SE3 Zero(unsigned int dimensions = 6)
         {
             return SE3(dimensions);
         }
@@ -281,7 +285,7 @@ namespace state_space {
         SE3 random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override
         {
             return SE3(SO3().random(randomEngine, nullptr),
-                       Rn::temp(3).random(randomEngine, bounds_ptr).Vector());
+                       Rn::Zero(3).random(randomEngine, bounds_ptr).Vector());
         };
 
         double distance(const SE3 &to) const override

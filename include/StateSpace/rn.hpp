@@ -130,7 +130,7 @@ namespace state_space {
             return (this->_data_.norm());
         };
 
-        static Rn temp(unsigned int dimensions = 3)
+        static Rn Zero(unsigned int dimensions = 3)
         {
             return Rn(dimensions);
         }

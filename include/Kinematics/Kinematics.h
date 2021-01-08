@@ -11,7 +11,7 @@
 #include <macros/class_forward.h>
 #include <unordered_map>
 
-namespace kinematics {
+namespace my_kinematics {
     enum IK_SINGULAR_CODE {
         SUCCESS,
         NO_SOLUTIONS,
@@ -79,21 +79,21 @@ namespace kinematics {
 
         //virtual void eulerStep()=0;
 
-        /**@brief computes forward kinematics with respect to space frame*/
+        /**@brief computes forward my_kinematics with respect to space frame*/
         state_space::SE_3 _fkInSpace(const state_space::JointSpace &joint_angles) const;
 
-        /**@brief computes forward kinematics with respect to body frame*/
+        /**@brief computes forward my_kinematics with respect to body frame*/
         state_space::SE_3 _fkInBody(const state_space::JointSpace &joint_angles) const;
 
         /**
-         * @brief computes numerical forward kinematics (Jacobian iterative method) with respect to space frame
+         * @brief computes numerical forward my_kinematics (Jacobian iterative method) with respect to space frame
          * @param eomg: error of omega (rotation)
          * @param ev: error of velocity (linear)
          */
         bool _nIkInSpace(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
                          double ev);
 
-        /**@brief computes numerical forward kinematics (Jacobian iterative method) with respect to body frame
+        /**@brief computes numerical forward my_kinematics (Jacobian iterative method) with respect to body frame
          * @param eomg: error of omega (rotation)
          * @param ev: error of velocity (linear)
          */
@@ -188,14 +188,14 @@ namespace kinematics {
         /**@brief computes jacobian matrix with respect to body frame*/
         Eigen::MatrixXd jacobianBody(const state_space::JointSpace &joint_angles);
 
-        /**@brief computes forward kinematics using the given joint angles*/
+        /**@brief computes forward my_kinematics using the given joint angles*/
         state_space::SE3 fk(const state_space::JointSpace &joint_angles) const
         {
             return IN_BODY_ ? state_space::SE3{_get_pose_in_world(_fkInBody(joint_angles))} :
                    state_space::SE3{_get_pose_in_world(_fkInSpace(joint_angles))};
         }
 
-        /**@brief computes inverse kinematics using numerical method
+        /**@brief computes inverse my_kinematics using numerical method
          * @param joint_angles are references for numerical method
          * @param desired_pose is a SE_3 value
          * */

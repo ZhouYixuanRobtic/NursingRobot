@@ -48,7 +48,7 @@ namespace planner {
         if (bounds_ptr != nullptr && bounds_ptr->rows() != dimensions) {
             throw std::invalid_argument("dimensions and bounds are not equal!");
         }
-        return dimensions == -1 ? T::temp().random(randomEngine, bounds_ptr) : T::temp(dimensions).random(randomEngine,
+        return dimensions == -1 ? T::Zero().random(randomEngine, bounds_ptr) : T::Zero(dimensions).random(randomEngine,
                                                                                                           bounds_ptr);
     }
 
@@ -60,7 +60,7 @@ namespace planner {
         if (bounds_ptr != nullptr && bounds_ptr->rows() != 3) {
             throw std::invalid_argument("only bound translation part");
         }
-        return state_space::SE3::temp().random(randomEngine, bounds_ptr);
+        return state_space::SE3::Zero().random(randomEngine, bounds_ptr);
     }
 
     /**
@@ -124,7 +124,7 @@ namespace planner {
                                               double lambda)
     {
         Eigen::Quaterniond start_quaternion(source.Quaternion());
-        auto temp_quaternion = start_quaternion.slerp(lambda,Eigen::Quaterniond(target.Quaternion));
+        auto temp_quaternion = start_quaternion.slerp(lambda,Eigen::Quaterniond(target.Quaternion()));
         return state_space::SO3(temp_quaternion.coeffs());
     }
     /**
@@ -135,7 +135,7 @@ namespace planner {
                                               double lambda)
     {
         auto temp_translation = interpolate(source.translationPart(), target.translationPart(), lambda);
-        auto temp_SO3 = sphereInterpolate(source.SO3part(),target.SO3part());
+        auto temp_SO3 = sphereInterpolate(source.SO3Part(),target.SO3Part(),lambda);
         return state_space::SE3(temp_SO3, temp_translation);
     }
 
@@ -191,7 +191,7 @@ namespace planner {
         };
 
         explicit Vertex()
-                : _state(T::temp()),
+                : _state(T::Zero()),
                   _vec(std::vector<double>()),
                   _parent(nullptr),
                   _children(std::list<Vertex<T> *>())

@@ -7,7 +7,7 @@
 
 #include "Kinematics.h"
 
-namespace kinematics {
+namespace my_kinematics {
     /**
  * @brief analytical inverse solutions for aubo i5(aubo series);
  * @param joint_solutions the solutions

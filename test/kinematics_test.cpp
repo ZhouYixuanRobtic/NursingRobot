@@ -11,9 +11,9 @@
 int main() {
     state_space::R6 temp_twist = planner::randomState<state_space::Rn>(6, nullptr).Vector();
     state_space::SE3 A(temp_twist);
-    kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
+    my_kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
 
-    aubo_i5_kinematics.setAnalyticalIK(kinematics::aubo_i5_analytical_IK);
+    aubo_i5_kinematics.setAnalyticalIK(my_kinematics::aubo_i5_analytical_IK);
 
 
     Eigen::MatrixX2d bounds_for_aubo(6, 2);

@@ -6,7 +6,7 @@ namespace planner{
                                                   const state_space::SE3 &target,
                                                   state_space::vector_JointSpace &seg_traj,
                                                   const std::string &reference_frame,
-                                                  const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper)
+                                                  const my_collision_detection::MoveItCollisionHelperImpl &moveItCollisionHelper)
     {
         const auto& kinematics_ptr = moveItCollisionHelper.getKinematicsPtr();
         state_space::SE3 start_pose;
@@ -56,7 +56,7 @@ namespace planner{
                                                   const state_space::vector_SE3 &waypoints,
                                                   state_space::vector_JointSpace &trajectory,
                                                   const std::string &reference_frame,
-                                                  const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper)
+                                                  const my_collision_detection::MoveItCollisionHelperImpl &moveItCollisionHelper)
     {
         double percentage_solved = 0.0;
         state_space::SE3 start_point = *waypoints.begin();

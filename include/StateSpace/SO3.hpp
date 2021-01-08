@@ -196,7 +196,7 @@ namespace state_space {
             return SO3(twist);
         };
 
-        static SO3 temp(unsigned int dimensions = 3)
+        static SO3 Zero(unsigned int dimensions = 3)
         {
             return SO3(dimensions);
         }

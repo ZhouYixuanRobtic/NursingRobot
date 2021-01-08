@@ -171,7 +171,7 @@ namespace state_space {
             return this->_data_.norm();
         };
 
-        static JointSpace temp(unsigned int dimensions = 6)
+        static JointSpace Zero(unsigned int dimensions = 6)
         {
             return JointSpace(dimensions);
         }

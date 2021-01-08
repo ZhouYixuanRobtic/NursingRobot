@@ -3,7 +3,7 @@
 #include "macros/class_forward.h"
 #include "StateSpace/SE3.hpp"
 #include "StateSpace/JointSpace.hpp"
-#include "collision_detection/MoveItCollisionHelper.h"
+#include "collision_detection/MoveItCollisionHelperImpl.h"
 namespace planner {
 
     class CartesianPlanner;
@@ -23,13 +23,13 @@ namespace planner {
                                     const state_space::SE3 &target,
                                     state_space::vector_JointSpace &seg_traj,
                                     const std::string &reference_frame,
-                                    const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper);
+                                    const my_collision_detection::MoveItCollisionHelperImpl &moveItCollisionHelper);
 
         static double computeCartesianPath(const state_space::JointSpace &current_joint_angles,
                                     const state_space::vector_SE3 &wayPoints,
                                     state_space::vector_JointSpace &trajectory,
                                     const std::string & reference_frame,
-                                    const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper
+                                    const my_collision_detection::MoveItCollisionHelperImpl &moveItCollisionHelper
                                     );
     };
 }

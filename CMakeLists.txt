@@ -84,7 +84,7 @@ set(lib_SRC
 add_library("StateSpace" STATIC ${lib_SRC})
 
 add_library(Kinematics src/Kinematics/Kinematics.cpp include/Kinematics/custom_kinematics.hpp)
-target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES})
+target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES} ${GLOG_LIBRARIES})
 
 add_library(RRT include/planner/RRT.hpp)
 target_link_libraries(RRT StateSpace Kinematics)
@@ -93,7 +93,7 @@ add_library(PlanningInterface src/planner/PlanningInterface.cpp)
 target_link_libraries(PlanningInterface StateSpace Kinematics)
 
 
-add_library(collision_helper src/collision_detection/MoveItCollisionHelper.cpp)
+add_library(collision_helper src/collision_detection/MoveItCollisionHelperImpl.cpp)
 target_link_libraries(collision_helper Kinematics StateSpace ${catkin_LIBRARIES})
 
 add_library(cartesianPlanner src/planner/CartesianPlanner.cpp)
@@ -108,6 +108,3 @@ target_link_libraries(6dTest StateSpace RRT -I${MKL_LIB_DIRS})
 
 add_executable(kTest test/kinematics_test.cpp)
 target_link_libraries(kTest StateSpace Kinematics )
-
-add_executable(RTest test/robot_model_test.cpp)
-target_link_libraries(RTest StateSpace Kinematics RobotModel)

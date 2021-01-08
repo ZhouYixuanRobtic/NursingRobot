@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 #include "macros/class_forward.h"
+#include <glog/logging.h>
 
 namespace state_space {
     //exponential coordinate of se(3) s = [w,v]

@@ -1,6 +1,6 @@
 ###                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             Aubo I5 Modeling based on Screw Theory
 
-​	To simplify analytical inverse kinematics solution, we should keep the screw axes as simple as possible. Fortunately, we have a very regular (most axes are parallel) robot, so we construct our screw axes referring to the first joint, rather than base. For perhaps usage, we also perform axes, as well as home configuration referring to the base.
+​	To simplify analytical inverse my_kinematics solution, we should keep the screw axes as simple as possible. Fortunately, we have a very regular (most axes are parallel) robot, so we construct our screw axes referring to the first joint, rather than base. For perhaps usage, we also perform axes, as well as home configuration referring to the base.
 
 #### Home Configuration
 
@@ -28,13 +28,13 @@ In case of singularity brought by Euler angles or misunderstanding caused by dif
   ^6M_E = -0.0405, 0.0, 0.14775,0.000, -0.000, \sqrt2/2, \sqrt2/2
   $$
 
-- Planning Configuration (used in forward kinematics and numerical inverse kinematics, if you want)
+- Planning Configuration (used in forward my_kinematics and numerical inverse my_kinematics, if you want)
 
 $$
 ^SM_E= {}^SM_1{}^1M_6 {}^6M_E  = -0.0405, -0.36325, 1.0085,0.500, -0.500, 0.500, 0.500
 $$
 
-- Inverse Configuration (used in analytical inverse kinematics)
+- Inverse Configuration (used in analytical inverse my_kinematics)
   $$
   ^1M_E={}^1M_6 {}^6M_E  = 0.0405, 0.36325, 0.8865,0.500, 0.500, 0.500, -0.500
   $$
@@ -114,7 +114,7 @@ $$
 #### Inverse Kinematics
 
 
-​	For simplifying the inverse kinematics, the screw axes and home configuration used here are $S$ and ${}^1M_6$
+​	For simplifying the inverse my_kinematics, the screw axes and home configuration used here are $S$ and ${}^1M_6$
 
 - Matrix form of ${}^1M_6$
   $$
@@ -308,7 +308,7 @@ $$
 
 - Test:
 
-  Forward kinematics:
+  Forward my_kinematics:
 
   wrist singular when $\theta_5 = \pm \pi/0$
 

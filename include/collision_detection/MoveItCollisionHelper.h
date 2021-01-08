@@ -1,83 +1,62 @@
-#ifndef NURSINGROBOT_MOVEITCOLLISIONHELPER_HPP
-#define NURSINGROBOT_MOVEITCOLLISIONHELPER_HPP
+#ifndef NURSINGROBOT_MOVEITCOLLISIONHELPER_H
+#define NURSINGROBOT_MOVEITCOLLISIONHELPER_H
 
-#include <ros/ros.h>
+#include "MoveItCollisionHelperImpl.h"
 
-#include <moveit/robot_model_loader/robot_model_loader.h>
-#include <moveit/planning_scene/planning_scene.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
-#include <moveit_msgs/DisplayRobotState.h>
-#include <moveit_msgs/DisplayTrajectory.h>
-#include <moveit_msgs/AttachedCollisionObject.h>
-#include <moveit_msgs/CollisionObject.h>
-
-#include <moveit/kinematic_constraints/utils.h>
-
-#include "Kinematics/Kinematics.h"
-#include "planner/Planner.hpp"
-#include "Kinematics/custom_kinematics.hpp"
-
-namespace my_collision_detection {
+namespace my_collision_detection{
 
     class MoveItCollisionHelper {
     private:
-        robot_model_loader::RobotModelLoaderPtr _robot_model_loader_ptr;
-
-        robot_model::RobotModelPtr  _robot_model_ptr;
-
-        planning_scene::PlanningScenePtr _planning_scene_ptr;
-
-        collision_detection::CollisionRequest _collision_request;
-
-        collision_detection::CollisionResult _collision_result;
-
-        kinematics::KinematicsPtr _kinematics_ptr;
-
-        robot_model::JointModelGroup* _joint_model_group_ptr;
+        ros::NodeHandlePtr _nh;
+        MoveItCollisionHelperImplPtr _moveit_collision_helper_impl_ptr;
 
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        MoveItCollisionHelper(const std::string &yaml_name,
-                              const std::string &group_name,
-                              const kinematics::analytical_ik_handled_t &analytical_ik_func = nullptr);
+        MoveItCollisionHelper(const std::string &group_name, const std::string &yaml_name,
+                              const my_kinematics::analytical_ik_handled_t &analytical_ik_func = nullptr)
+                : _nh(boost::make_shared<ros::NodeHandle>("~")),
+                  _moveit_collision_helper_impl_ptr(std::make_shared<MoveItCollisionHelperImpl>(group_name, yaml_name, analytical_ik_func,
+                                                                                                nullptr))
+        {
+
+            _moveit_collision_helper_impl_ptr->setJointSubscriber(
+                    std::make_shared<JointStatesSubscriber>(_nh,"/joint_states",100));
+
+        }
 
         ~MoveItCollisionHelper() = default;
 
-        bool isStateValid(const state_space::JointSpace &state);
+        bool isStateValid(const state_space::JointSpace &state) const
+        { return _moveit_collision_helper_impl_ptr->isStateValid(state); }
 
-        bool isStateValid(const state_space::SE3 &state);
+        bool isStateValid(const state_space::SE3 &state) const
+        { return _moveit_collision_helper_impl_ptr->isStateValid(state); }
 
         template<typename T>
         bool isPathValid(const T &from,
-                         const T &to)
-        {
-            double step = 0;
-            bool result =true;
-            while(step<=1){
-                T temp_state = planner::interpolate(from,to,step);
-                result &= isStateValid(temp_state);
-                step += 0.25;
-            }
-            return result;
-        }
+                         const T &to) const
+        { return _moveit_collision_helper_impl_ptr->template isPathValid(from, to); }
 
-        const kinematics::KinematicsPtr & getKinematicsPtr() const
-        {
-            return _kinematics_ptr;
-        }
+        const my_kinematics::KinematicsPtr &getKinematicsPtr() const
+        { return _moveit_collision_helper_impl_ptr->getKinematicsPtr(); }
 
         state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
                                                          const state_space::JointSpace *reference_ptr,
-                                                         bool check_collision = true) const;
+                                                         bool check_collision = true) const
+        { return _moveit_collision_helper_impl_ptr->allValidSolutions(desired_pose, reference_ptr, check_collision); }
 
-        bool nearestSolution(state_space::JointSpace& solution,
-                             ,const state_space::SE3 &desired_pose,
+        bool nearestSolution(state_space::JointSpace &solution,
+                             const state_space::SE3 &desired_pose,
                              const state_space::JointSpace &reference,
                              bool isConsecutive = true,
-                             bool check_collision = true) const ;
+                             bool check_collision = true) const
+        {
+            return _moveit_collision_helper_impl_ptr->nearestSolution(solution, desired_pose, reference, isConsecutive,
+                                                                      check_collision);
+        }
 
+        state_space::JointSpace getCurrentJointAngles() const
+        { return _moveit_collision_helper_impl_ptr->getCurrentJointAngles(); }
     };
 }
 
-
-#endif
+#endif //NURSINGROBOT_MOVEITCOLLISIONHELPER_H
