@@ -1,72 +1,67 @@
 #define EIGEN_MKL_USE_ALL
+#include <gtest/gtest.h>
+#include "util/logger.hpp"
+#include <ros/ros.h>
+#include <moveit/move_group_interface/move_group_interface.h>
+#include <collision_detection/MoveItCollisionHelper.h>
 
-#include "StateSpace/JointSpace.hpp"
-#include "StateSpace/rn.hpp"
-#include "StateSpace/SE3.hpp"
-#include "StateSpace/SO3.hpp"
-#include "Kinematics/Kinematics.h"
-#include "Kinematics/custom_kinematics.hpp"
-#include "planner/Planner.hpp"
 
-int main() {
-    state_space::R6 temp_twist = planner::randomState<state_space::Rn>(6, nullptr).Vector();
-    state_space::SE3 A(temp_twist);
-    my_kinematics::Kinematics aubo_i5_kinematics("../config/aubo_i5.yaml");
 
-    aubo_i5_kinematics.setAnalyticalIK(my_kinematics::aubo_i5_analytical_IK);
 
+TEST(KinematicsTest,AuboIKWithCollisionTest)
+{
+    const std::string PLANNING_GROUP = "manipulator_i5";
+    ros::AsyncSpinner spinner(2);
+    spinner.start();
+
+    my_collision_detection::MoveItCollisionHelper moveItCollisionHelper(
+            PLANNING_GROUP,
+            "/home/xcy/WorkSpace/src/NursingRobot/config/aubo_i5.yaml",
+            my_kinematics::aubo_i5_analytical_IK);
 
     Eigen::MatrixX2d bounds_for_aubo(6, 2);
     bounds_for_aubo << Eigen::Matrix<double, 6, 1>().setConstant(3.05), Eigen::Matrix<double, 6, 1>().setConstant(
             -3.05);
 
-    size_t nearest_counter{0}, all_valid_counter{0}, ik_counter{0};
-    const size_t max_iterations = 1e6;
-    const double zero_thresh = 1e-3;
+    const auto& aubo_i5_kinematics = moveItCollisionHelper.getKinematicsPtr();
+    size_t ik_counter{0};
+    const size_t max_iterations = 1;
     double nearest_time = 0, all_time = 0;
     for (size_t index = 0; index < max_iterations; ++index) {
-        auto test_joint = planner::randomState<state_space::JointSpace>( 6,&bounds_for_aubo);
-
+        //auto test_joint = planner::randomState<state_space::JointSpace>( 6,&bounds_for_aubo);
+        state_space::JointSpace test_joint(std::vector<double>{-1.8253,-1.78352, -2.65591 ,1.90189 ,0.373454 -0.792052});
         auto desired_pose = aubo_i5_kinematics.fk(test_joint);
         auto refer_joint = test_joint;
-        refer_joint[4] -= 0.1;
+        refer_joint[4] -= 0.01;
         clock_t start(clock());
-        auto result = aubo_i5_kinematics.nearestIkSolution(desired_pose, refer_joint, true);
+        auto nresult = aubo_i5_kinematics.nIk(desired_pose,refer_joint);
+        std::cout<<refer_joint<<std::endl;
+        auto result = moveItCollisionHelper.allValidSolutions(desired_pose, &refer_joint, true);
         clock_t end(clock());
-        nearest_time += double(end - start) / CLOCKS_PER_SEC;
-        if (planner::distance(result, test_joint) < zero_thresh)
-            nearest_counter++;
-
-
-        if (planner::distance(aubo_i5_kinematics.fk(test_joint),
-                              aubo_i5_kinematics.fk(result))
-            < zero_thresh)
-            ik_counter++;
-
-
-        Eigen::MatrixXd joint_solutions;
-        start = clock();
-        bool all_valid_bool = aubo_i5_kinematics.allValidIkSolutions(joint_solutions, desired_pose.SE3Matrix(),
-                                                                     &refer_joint);
-        end = clock();
         all_time += double(end - start) / CLOCKS_PER_SEC;
-        if (all_valid_bool) {
-            for (int i = 0; i < joint_solutions.cols(); ++i) {
-                if ((joint_solutions.col(i) - test_joint.Vector()).norm() < zero_thresh)
-                    all_valid_counter++;
-            }
+        if(!result.empty())
+            ik_counter++;
+        else {
+            LOG(INFO) << test_joint << std::endl;
+            LOG(INFO)<< desired_pose.SE3Matrix()<<std::endl;
         }
     }
-    std::cout << "exactly the same IK solution coverage rate: " << (double) (nearest_counter) / (double) max_iterations
-              << std::endl;
-    std::cout << "exactly the same IK solution using all valid method coverage rate: "
-              << (double) (all_valid_counter) / (double) max_iterations << std::endl;
-    std::cout << "IK solution (equals to fk) coverage rate: " << (double) (ik_counter) / (double) max_iterations
-              << std::endl;
-    std::cout << "the average nearest_time consumption of nearest ik method: " << 1e6 * nearest_time / max_iterations
+
+    EXPECT_DOUBLE_EQ(1.0,(double) (ik_counter) / (double) max_iterations);
+    LOG_IF(INFO,1 != (double) (ik_counter) / (double) max_iterations)<<"IK solution (equals to fk) coverage rate is not 100, but"
+                                                                     << ik_counter<<"/"<<max_iterations;
+
+    LOG(INFO) << "the average time consumption of valid ik method: " << 1e6 * all_time / max_iterations
               << "us\n";
-    std::cout << "the average nearest_time consumption of all valid ik method: " << 1e6 * all_time / max_iterations
-              << "us\n";
+    spinner.stop();
 }
+int main(int argc, char** argv)
+{
+    logger lg(argv[0],"./log");
+    testing::InitGoogleTest(&argc, argv);
+    ros::init(argc, argv, "cTest");
+    return RUN_ALL_TESTS();
+}
+
 
 

@@ -83,13 +83,13 @@ namespace my_collision_detection {
 
         planning_scene::PlanningScenePtr _planning_scene_ptr;
 
-        my_kinematics::KinematicsPtr _kinematics_ptr;
+        my_kinematics::Kinematics _kinematics;
 
         const robot_model::JointModelGroup *_joint_model_group;
 
         JointStatesSubscriberPtr _joint_state_subscribe_ptr;
     public:
-
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         MoveItCollisionHelperImpl(const std::string &group_name,
                                   const std::string &yaml_name,
                                   const my_kinematics::analytical_ik_handled_t &analytical_ik_func,
@@ -99,7 +99,7 @@ namespace my_collision_detection {
 
         bool isStateValid(const state_space::JointSpace &state) const;
 
-        bool isStateValid(const state_space::SE3 &state) const;
+        bool isStateValid(const state_space::SE3 &state);
 
         template<typename T>
         bool isPathValid(const T &from,
@@ -115,20 +115,20 @@ namespace my_collision_detection {
             return result;
         }
 
-        const my_kinematics::KinematicsPtr &getKinematicsPtr() const
+        const my_kinematics::Kinematics &getKinematics() const
         {
-            return _kinematics_ptr;
+            return _kinematics;
         }
 
         state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
                                                          const state_space::JointSpace *reference_ptr,
-                                                         bool check_collision) const;
+                                                         bool check_collision);
 
         bool nearestSolution(state_space::JointSpace &solution,
                              const state_space::SE3 &desired_pose,
                              const state_space::JointSpace &reference,
                              bool isConsecutive,
-                             bool check_collision) const;
+                             bool check_collision);
 
         void setJointSubscriber(const JointStatesSubscriberPtr &joint_subscriber)
         {
@@ -145,7 +145,17 @@ namespace my_collision_detection {
             }
         }
 
+        bool getCurrentLinkTransform(state_space::SE3 &LinkTransform, const std::string &link_name,
+                              const state_space::JointSpace &joint_angles) const
+        {
+            return _kinematics.getLinkTransform(LinkTransform,link_name,getCurrentJointAngles());
+        }
 
+
+        bool getEndEffectorPose(state_space::SE3 &ee_transform) const
+        {
+            return getCurrentLinkTransform(ee_transform,_kinematics.getEndEffectorName(),getCurrentJointAngles());
+        }
     };
 
 

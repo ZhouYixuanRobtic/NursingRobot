@@ -42,15 +42,13 @@ namespace my_kinematics {
 
 
     MOVEIT_CLASS_FORWARD(Kinematics);
-
+    typedef std::unordered_map<std::string, state_space::SE3, std::hash<std::string>, std::equal_to<std::string>,
+            Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > joint_transform_map;
     /**
      * @brief Kinematics class computes fk and ik.
      */
     class Kinematics {
     protected:
-        typedef std::unordered_map<std::string, state_space::SE3, std::hash<std::string>, std::equal_to<std::string>,
-                Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > joint_transform_map;
-
         //screw axes
         state_space::vector_SE3 all_screw_axes_{};
         //boolean, true for describing screw axes based on body frame, false for space frame.

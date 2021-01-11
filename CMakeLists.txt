@@ -6,7 +6,7 @@ SET(CMAKE_CXX_STANDARD 11)
 # include cmake files in the 'cmake folder'
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 FIND_PACKAGE(OpenMP REQUIRED)
 if (OPENMP_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -18,17 +18,14 @@ add_compile_options(-std=c++11)
 set(MKL_INCLUDE_DIRS "/opt/intel/oneapi/mkl/latest/include")
 set(MKL_LIB_DIRS "/opt/intel/oneapi/mkl/latest/lib/intel64")
 
+find_package(Eigen3 REQUIRED)
+
+
 find_package(catkin REQUIRED COMPONENTS
         geometry_msgs roscpp rospy std_msgs
         interactive_markers moveit_core moveit_visual_tools moveit_ros_planning moveit_ros_planning_interface
         pluginlib geometric_shapes pcl_ros pcl_conversions rosbag tf2_ros tf2_eigen tf2_geometry_msgs
 )
-
-find_package(Eigen3 REQUIRED)
-# Eigen 3.2 (Wily) only provides EIGEN3_INCLUDE_DIR, not EIGEN3_INCLUDE_DIRS
-if (NOT EIGEN3_INCLUDE_DIRS)
-    set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
-endif ()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(YAML REQUIRED yaml-cpp)
@@ -103,8 +100,11 @@ target_link_libraries(cartesianPlanner Kinematics collision_helper StateSpace)
 add_executable(NursingRobot src/main.cpp)
 target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper StateSpace)
 
-add_executable(6dTest test/6d_rrt_test.cpp)
-target_link_libraries(6dTest StateSpace RRT -I${MKL_LIB_DIRS})
+catkin_add_gtest(6dTest test/rrt_test.cpp)
+target_link_libraries(6dTest StateSpace RRT ${catkin_LIBRARIES} collision_helper)
 
-add_executable(kTest test/kinematics_test.cpp)
-target_link_libraries(kTest StateSpace Kinematics )
+catkin_add_gtest(kTest test/kinematics_test.cpp)
+target_link_libraries(kTest ${catkin_LIBRARIES} collision_helper)
+
+catkin_add_gtest(cTest test/moveit_collision_helper_test.cpp)
+target_link_libraries(cTest ${catkin_LIBRARIES} collision_helper  )

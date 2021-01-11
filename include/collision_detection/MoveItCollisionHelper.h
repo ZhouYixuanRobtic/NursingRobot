@@ -12,7 +12,7 @@ namespace my_collision_detection{
 
     public:
         MoveItCollisionHelper(const std::string &group_name, const std::string &yaml_name,
-                              const my_kinematics::analytical_ik_handled_t &analytical_ik_func = nullptr)
+                              const my_kinematics::analytical_ik_handled_t &analytical_ik_func)
                 : _nh(boost::make_shared<ros::NodeHandle>("~")),
                   _moveit_collision_helper_impl_ptr(std::make_shared<MoveItCollisionHelperImpl>(group_name, yaml_name, analytical_ik_func,
                                                                                                 nullptr))
@@ -36,8 +36,8 @@ namespace my_collision_detection{
                          const T &to) const
         { return _moveit_collision_helper_impl_ptr->template isPathValid(from, to); }
 
-        const my_kinematics::KinematicsPtr &getKinematicsPtr() const
-        { return _moveit_collision_helper_impl_ptr->getKinematicsPtr(); }
+        const my_kinematics::Kinematics &getKinematicsPtr() const
+        { return _moveit_collision_helper_impl_ptr->getKinematics(); }
 
         state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
                                                          const state_space::JointSpace *reference_ptr,
@@ -56,6 +56,17 @@ namespace my_collision_detection{
 
         state_space::JointSpace getCurrentJointAngles() const
         { return _moveit_collision_helper_impl_ptr->getCurrentJointAngles(); }
+
+        bool getCurrentLinkTransform(state_space::SE3 &LinkTransform, const std::string &link_name,
+                                     const state_space::JointSpace &joint_angles) const
+        { return _moveit_collision_helper_impl_ptr->getCurrentLinkTransform(LinkTransform,link_name,getCurrentJointAngles());}
+
+        state_space::SE3 getEndEffectorPose() const
+        {
+            state_space::SE3 ee_transform{};
+            _moveit_collision_helper_impl_ptr->getEndEffectorPose(ee_transform);
+            return ee_transform;
+        }
     };
 }
 

@@ -9,6 +9,28 @@
 #include <random>
 
 namespace planner {
+    template<typename T>
+    class RRT;
+
+
+    template<typename T>
+    struct RRT_REQUEST{
+    public:
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        RRT_REQUEST(const T &start,const T&goal,double time_limit = 5)
+                : _start(start),
+                  _goal(goal),
+                  _time_limit(time_limit)
+        {
+
+        };
+
+        friend RRT<T>;
+    private:
+        T _start;
+        T _goal;
+        double _time_limit;
+    };
 
     template<typename T>
     class RRT {
@@ -29,7 +51,7 @@ namespace planner {
 
         const int _dimensions;
 
-        int _iter_max{};
+        std::size_t _iter_max{};
 
         double _step_len{}, _max_step_len{};
 
@@ -38,6 +60,8 @@ namespace planner {
         double _goal_max_dist{};
 
         double _d_min{};
+
+        double _time_limit{};
 
         bool _is_ASC_enabled{};
 
@@ -180,10 +204,10 @@ namespace planner {
 
         virtual ~RRT() = default;
 
-        int MaxIterations() const
+        std::size_t MaxIterations() const
         { return _iter_max; };
 
-        void setMaxIterations(int itr)
+        void setMaxIterations(std::size_t itr)
         { _iter_max = itr; };
 
 
@@ -290,16 +314,25 @@ namespace planner {
             }
         }
 
-        void constructPlan(const T &start, const T &goal)
+        void constructPlan(const RRT_REQUEST<T> & rrtRequest)
         {
-            setStartState(start);
-            _goal = goal;
-            _d_min = planner::distance(start, goal);
+            setStartState(rrtRequest._start);
+            _goal = rrtRequest._goal;
+            _d_min = planner::distance(_start, _goal);
+            _time_limit = rrtRequest._time_limit;
         }
 
         virtual bool planning()
         {
+            time_t start(clock());
+            double time {};
             for (int i = 0; i < MaxIterations(); ++i) {
+                time += (double)(clock() -start)/CLOCKS_PER_SEC;
+                if(time >= _time_limit){
+                    LOG(ERROR)<<"No path find within "<<_time_limit<<" seconds"
+                    <<" now iterates "<<i<< "times";
+                    return false;
+                }
                 Vertex<T> *new_vertex;
                 double r = rand() /
                            (double) RAND_MAX;
@@ -313,6 +346,7 @@ namespace planner {
                 }
 
             }
+            LOG(ERROR)<<"No path find within "<<MaxIterations()<<" iterations";
             return false;
         }
 

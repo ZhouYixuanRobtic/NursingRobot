@@ -1,16 +1,15 @@
 #define EIGEN_USE_MKL_ALL
+
 #include "util/logger.hpp"
 #include <ros/ros.h>
 #include "collision_detection/MoveItCollisionHelper.h"
-#include "planner/RRT.hpp"
 #include <moveit_visual_tools/moveit_visual_tools.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include "Kinematics/custom_kinematics.hpp"
-
 int main(int argc, char **argv)
 {
 
-    logger a("/home/xcy/WorkSpace/src/NursingRobot/log/", argv[0]);
+    logger a( argv[0],"/home/xcy/WorkSpace/src/NursingRobot/log/");
     ros::init(argc, argv, "NursingRobot");
     ros::AsyncSpinner spinner(2);
     spinner.start();
@@ -20,9 +19,8 @@ int main(int argc, char **argv)
             "/home/xcy/WorkSpace/src/NursingRobot/config/aubo_i5.yaml",
             my_kinematics::aubo_i5_analytical_IK);
 
-    const auto& kinematicsPtr = moveItCollisionHelper.getKinematicsPtr();
 
-    auto current_pose = kinematicsPtr->fk(moveItCollisionHelper.getCurrentJointAngles());
+    auto current_pose = moveItCollisionHelper.getEndEffectorPose();
 
 
     Eigen::Vector3d path_vector{0,-0.3,0};

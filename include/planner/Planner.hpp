@@ -22,7 +22,7 @@
 #include <cstdlib>
 #include <list>
 #include "boost/functional/hash.hpp"
-
+#include <glog/logging.h>
 namespace planner {
     /**
      *
