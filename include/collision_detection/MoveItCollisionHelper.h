@@ -36,8 +36,8 @@ namespace my_collision_detection{
                          const T &to) const
         { return _moveit_collision_helper_impl_ptr->template isPathValid(from, to); }
 
-        const my_kinematics::Kinematics &getKinematicsPtr() const
-        { return _moveit_collision_helper_impl_ptr->getKinematics(); }
+        const my_kinematics::KinematicsPtr &getKinematicsPtr() const
+        { return _moveit_collision_helper_impl_ptr->getKinematicsPtr(); }
 
         state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
                                                          const state_space::JointSpace *reference_ptr,

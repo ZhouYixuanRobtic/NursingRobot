@@ -5,9 +5,6 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <collision_detection/MoveItCollisionHelper.h>
 
-
-
-
 TEST(KinematicsTest,AuboIKWithCollisionTest)
 {
     const std::string PLANNING_GROUP = "manipulator_i5";
@@ -30,12 +27,11 @@ TEST(KinematicsTest,AuboIKWithCollisionTest)
     for (size_t index = 0; index < max_iterations; ++index) {
         //auto test_joint = planner::randomState<state_space::JointSpace>( 6,&bounds_for_aubo);
         state_space::JointSpace test_joint(std::vector<double>{-1.8253,-1.78352, -2.65591 ,1.90189 ,0.373454 -0.792052});
-        auto desired_pose = aubo_i5_kinematics.fk(test_joint);
+        auto desired_pose = aubo_i5_kinematics->fk(test_joint);
         auto refer_joint = test_joint;
         refer_joint[4] -= 0.01;
         clock_t start(clock());
-        auto nresult = aubo_i5_kinematics.nIk(desired_pose,refer_joint);
-        std::cout<<refer_joint<<std::endl;
+        auto nresult = aubo_i5_kinematics->nIk(desired_pose,refer_joint);
         auto result = moveItCollisionHelper.allValidSolutions(desired_pose, &refer_joint, true);
         clock_t end(clock());
         all_time += double(end - start) / CLOCKS_PER_SEC;

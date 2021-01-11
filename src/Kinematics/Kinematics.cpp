@@ -94,7 +94,7 @@ namespace my_kinematics{
         return ee_pose;
     }
 
-    Eigen::MatrixXd Kinematics::jacobianSpace(const state_space::JointSpace &joint_angles) const
+    Eigen::MatrixXd Kinematics::jacobianSpace(const state_space::JointSpace &joint_angles)
     {
         Eigen::MatrixXd jacobian_matrix(6, 6);
         jacobian_matrix.col(0) = all_screw_axes_[0].Axis();
@@ -106,7 +106,7 @@ namespace my_kinematics{
         return jacobian_matrix;
     }
 
-    Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace &joint_angles) const
+    Eigen::MatrixXd Kinematics::jacobianBody(const state_space::JointSpace &joint_angles)
     {
         Eigen::MatrixXd jacobian_matrix(6, 6);
         state_space::SE_3 tmp_matrix = state_space::SE_3::Identity();
@@ -119,7 +119,7 @@ namespace my_kinematics{
     }
 
     bool Kinematics::_nIkInSpace(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
-                                 double ev) const
+                                 double ev)
     {
         int i = 0;
         int max_iterations = 50;
@@ -145,7 +145,7 @@ namespace my_kinematics{
     }
 
     bool Kinematics::_nIkInBody(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
-                                double ev) const
+                                double ev)
     {
         int i = 0;
         int max_iterations = 50;
