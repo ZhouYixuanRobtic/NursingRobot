@@ -11,6 +11,7 @@ namespace my_collision_detection{
         MoveItCollisionHelperImplPtr _moveit_collision_helper_impl_ptr;
 
     public:
+
         MoveItCollisionHelper(const std::string &group_name, const std::string &yaml_name,
                               const my_kinematics::analytical_ik_handled_t &analytical_ik_func)
                 : _nh(boost::make_shared<ros::NodeHandle>("~")),
@@ -19,7 +20,7 @@ namespace my_collision_detection{
         {
 
             _moveit_collision_helper_impl_ptr->setJointSubscriber(
-                    std::make_shared<JointStatesSubscriber>(_nh,"/joint_states",100));
+                    std::allocate_shared<JointStatesSubscriber>(Eigen::aligned_allocator<JointStatesSubscriber>(),_nh,"/joint_states",100));
 
         }
 

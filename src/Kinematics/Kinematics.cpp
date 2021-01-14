@@ -184,14 +184,12 @@ namespace my_kinematics{
     bool Kinematics::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose,
                                          const state_space::JointSpace *reference)
     {
-
-        IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, nullptr);
+        joint_solutions.resize(0,0);
+        IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, reference);
         if (ret_code == NO_SOLUTIONS) {
-            if (reference) {
-                state_space::JointSpace solution{*reference};
-                if (nIk(desired_pose, solution)) {
-                    joint_solutions = solution.Vector();
-                }
+            state_space::JointSpace solution = reference ? *reference : state_space::JointSpace::Zero();
+            if (nIk(desired_pose, solution)) {
+                joint_solutions = solution.Vector();
             }
         } else if (ret_code == WRIST_SINGULAR) {
             /*if have reference, use numerical method to get right singular joint angle*/
@@ -204,14 +202,15 @@ namespace my_kinematics{
                     }
                 }
             }
-            /*else keep 0 as reference value*/
+            /**\note do nothing when have no reference*/
         }
         return joint_solutions.cols() != 0;
 
     }
 
-    state_space::JointSpace
-    Kinematics::nearestIkSolution(const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference,
+    bool
+    Kinematics::nearestIkSolution(state_space::JointSpace& raw_solution,
+                                  const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference,
                                   bool isConsecutive)
     {
         //return the nearest ik solution
@@ -223,10 +222,11 @@ namespace my_kinematics{
             for (int i = 0; i < joint_solutions.cols(); ++i) {
                 norm_box.emplace_back(reference.distance(joint_solutions.col(i)));
             }
-            return state_space::JointSpace(joint_solutions.col(
+            raw_solution = state_space::JointSpace(joint_solutions.col(
                     std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end()))));
+            return true;
         }
-        return solution;
+        return false;
     }
 
     state_space::JointSpace

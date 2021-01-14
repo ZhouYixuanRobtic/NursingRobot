@@ -27,7 +27,6 @@ namespace my_collision_detection {
     class JointStatesSubscriber {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
         JointStatesSubscriber(ros::NodeHandlePtr &nh, const std::string &topic_name, size_t buff_size)
         {
             subscriber_ = nh->subscribe(topic_name, buff_size, &JointStatesSubscriber::msg_callback, this);

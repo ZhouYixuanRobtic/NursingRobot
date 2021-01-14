@@ -34,7 +34,7 @@ namespace state_space {
 
     typedef Eigen::Matrix<double, 6, 6> jacobian_mat;
 
-
+    /**\note: 2e-8 denotes 1e-6 degree precision*/
     static bool NearZero(const double val)
     {
         return (std::abs(val) < 1e-8);

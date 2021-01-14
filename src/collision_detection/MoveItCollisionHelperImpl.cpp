@@ -6,10 +6,10 @@ namespace my_collision_detection {
                                                          const std::string &yaml_name,
                                                          const my_kinematics::analytical_ik_handled_t &analytical_ik_func,
                                                          JointStatesSubscriberPtr joint_state_subscribe_ptr)
-            : _robot_model_loader_ptr(new robot_model_loader::RobotModelLoader("robot_description")),
+            : _robot_model_loader_ptr(std::make_shared<robot_model_loader::RobotModelLoader>("robot_description")),
               _robot_model_ptr(_robot_model_loader_ptr->getModel()),
-              _planning_scene_ptr(new planning_scene::PlanningScene(_robot_model_ptr)),
-              _kinematics_ptr(new my_kinematics::Kinematics(yaml_name, analytical_ik_func)),
+              _planning_scene_ptr(std::make_shared<planning_scene::PlanningScene>(_robot_model_ptr)),
+              _kinematics_ptr(std::allocate_shared<my_kinematics::Kinematics>(Eigen::aligned_allocator<my_kinematics::Kinematics>(),yaml_name,analytical_ik_func)),
               _joint_model_group(_planning_scene_ptr->getCurrentState().getJointModelGroup(group_name)),
               _joint_state_subscribe_ptr(std::move(joint_state_subscribe_ptr))
     {
@@ -61,17 +61,8 @@ namespace my_collision_detection {
                                                     bool check_collision) const
     {
         //return the nearest ik solution
-        const state_space::JointSpace *reference_ptr = isConsecutive ? &solution : nullptr;
-        auto joint_solutions = allValidSolutions(desired_pose, reference_ptr,check_collision);
-        if (!joint_solutions.empty()) {
-            std::vector<double> norm_box;
-            for (const auto & it: joint_solutions) {
-                norm_box.emplace_back(reference.distance(it));
-            }
-            solution = joint_solutions[std::distance(norm_box.begin(), std::min_element(norm_box.begin(), norm_box.end()))];
-            return true;
-        }
-        return false;
+        return _kinematics_ptr->nearestIkSolution(solution,desired_pose,reference,isConsecutive)&&
+               isStateValid(solution);
     }
 
 

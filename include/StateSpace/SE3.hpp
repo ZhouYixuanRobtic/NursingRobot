@@ -73,7 +73,6 @@ namespace state_space {
             return se_3{VecTose3(Axis())};
         };
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         explicit SE3(unsigned int dimensions = 6)
         {
@@ -99,7 +98,7 @@ namespace state_space {
             _twist_3d_ = twist;
             se_3 se_3_;
             if (!NearZero(Theta()))
-                se_3_ = VecTose3(Vector());
+                se_3_ = VecTose3(_twist_3d_);
             else
                 se_3_ << Eigen::Matrix3d::Identity(), _twist_3d_.block<3, 1>(3, 0),
                         0, 0, 0, 0;
@@ -110,10 +109,9 @@ namespace state_space {
         {
             Eigen::Vector3d translation{pose_with_quaternion.block<3, 1>(0, 0)};
             Eigen::Quaterniond rotation{pose_with_quaternion.block<4, 1>(3, 0)};
-            SE_3 transformation_matrix;
-            transformation_matrix << rotation.toRotationMatrix(), translation,
-                    0, 0, 0, 1;
-            *this = SE3(transformation_matrix);
+            SE3_matrix_  << rotation.toRotationMatrix(), translation,
+                            0, 0, 0, 1;
+            _twist_3d_ = se3ToVec(MatrixLog(SE3_matrix_));
         }
 
         explicit SE3(const Eigen::Affine3d &transformation_matrix)

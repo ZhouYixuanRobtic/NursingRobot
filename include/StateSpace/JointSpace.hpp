@@ -24,15 +24,11 @@ namespace state_space {
                 if (val > _upper_limit_)
                     val -= 2 * _upper_limit_;
                 else if (val < _lower_limit_)
-                    val += 2 * _lower_limit_;
+                    val += 2 * _upper_limit_;
             }
         }
 
-        enum {
-            NeedsToAlign = (sizeof(_data_) % 16) == 0
-        };
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 
         JointSpace(const JointSpace &other)
                 : StateSpace(other),

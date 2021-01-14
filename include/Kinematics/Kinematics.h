@@ -50,7 +50,7 @@ namespace my_kinematics {
     class Kinematics {
     protected:
         //screw axes
-        state_space::vector_SE3 all_screw_axes_{};
+        state_space::vector_SE3 all_screw_axes_;
         //boolean, true for describing screw axes based on body frame, false for space frame.
         bool IN_BODY_{};
         //home configuration describing the pose of the last joint coordinates frame with respect to the first joint coordinates frame
@@ -116,7 +116,6 @@ namespace my_kinematics {
 
 
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         explicit Kinematics(const std::string &yaml_name, const analytical_ik_handled_t &analytical_ik_fuck = nullptr);
 
@@ -220,21 +219,44 @@ namespace my_kinematics {
             return nIk(desired_pose.SE3Matrix(), joint_angles, eomg, ev);
         };
 
-        state_space::JointSpace nearestIkSolution(const state_space::SE_3 &desired_pose,
-                                                  const state_space::JointSpace &reference, bool isConsecutive = false);
 
-        state_space::JointSpace nearestIkSolution(const Eigen::Isometry3d &desired_pose,
-                                                  const state_space::JointSpace &reference,
-                                                  bool isConsecutive = false)
+        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+                               const state_space::SE_3 &desired_pose,
+                               const state_space::JointSpace &reference,
+                               bool isConsecutive);
+
+        /**\note only can be used when reference distance lower than 0.2/99.9% 0.5/99% 2.0/90%
+         * but when only have single joint difference, this method is preferred.
+         * */
+        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+                                           const state_space::SE_3 &desired_pose,
+                                           const state_space::JointSpace &reference)
         {
-            return nearestIkSolution(desired_pose.matrix(), reference, isConsecutive);
+            raw_solution = reference;
+            return nIk(desired_pose,raw_solution);
+        }
+        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+                               const state_space::SE3 &desired_pose,
+                               const state_space::JointSpace &reference)
+        {
+            raw_solution = reference;
+            return nIk(desired_pose,raw_solution);
+        }
+
+        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+                               const Eigen::Isometry3d &desired_pose,
+                                                  const state_space::JointSpace &reference,
+                                                  bool isConsecutive)
+        {
+            return nearestIkSolution(raw_solution,desired_pose.matrix(), reference, isConsecutive);
         };
 
-        state_space::JointSpace nearestIkSolution(const state_space::SE3 &desired_pose,
+        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+                                                  const state_space::SE3 &desired_pose,
                                                   const state_space::JointSpace &reference,
-                                                  bool isConsecutive = false)
+                                                  bool isConsecutive)
         {
-            return nearestIkSolution(desired_pose.SE3Matrix(), reference, isConsecutive);
+            return nearestIkSolution(raw_solution,desired_pose.SE3Matrix(), reference, isConsecutive);
         };
 
         state_space::JointSpace

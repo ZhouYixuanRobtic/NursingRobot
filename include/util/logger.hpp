@@ -50,6 +50,8 @@ public:
 
         FLAGS_max_log_size =100;
 
+        FLAGS_stop_logging_if_full_disk = true;
+
         if (!LOG_DIR_.empty()&& access(LOG_DIR_.data(), 0) == -1){
             mkdir(LOG_DIR_.data(),0777);
         }

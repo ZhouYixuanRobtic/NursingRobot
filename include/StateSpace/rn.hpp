@@ -15,11 +15,7 @@ namespace state_space {
     protected:
         unsigned int _dimensions_;
         Eigen::VectorXd _data_;
-        enum {
-            NeedsToAlign = (sizeof(_data_) % 16) == 0
-        };
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 
         explicit Rn(unsigned int dimensions = 3)
         {
