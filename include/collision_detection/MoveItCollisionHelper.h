@@ -20,7 +20,7 @@ namespace my_collision_detection{
         {
 
             _moveit_collision_helper_impl_ptr->setJointSubscriber(
-                    std::allocate_shared<JointStatesSubscriber>(Eigen::aligned_allocator<JointStatesSubscriber>(),_nh,"/joint_states",100));
+                    std::make_shared<JointStatesSubscriber>(_nh,"/joint_states",100));
 
         }
 

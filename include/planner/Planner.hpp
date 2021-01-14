@@ -173,7 +173,6 @@ namespace planner {
     template<typename T>
     class Vertex {
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         explicit Vertex(const T &data, Vertex<T> *parent = nullptr, int dimensions = 6,
                         std::function<void(T, double *)> TToArray = NULL)

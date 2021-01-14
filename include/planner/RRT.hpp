@@ -16,7 +16,6 @@ namespace planner {
     template<typename T>
     struct RRT_REQUEST{
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         RRT_REQUEST(const T &start,const T&goal,double time_limit = 5)
                 : _start(start),
                   _goal(goal),
@@ -174,7 +173,6 @@ namespace planner {
 
 
     public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
         RRT(const RRT<T> &) = delete;
 
