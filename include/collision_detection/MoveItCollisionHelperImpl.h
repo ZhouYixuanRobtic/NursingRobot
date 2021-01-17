@@ -118,9 +118,10 @@ namespace my_collision_detection {
             return _kinematics_ptr;
         }
 
-        state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
-                                                         const state_space::JointSpace *reference_ptr,
-                                                         bool check_collision) const;
+        bool allValidSolutions(state_space::vector_JointSpace &final_results,
+                               const state_space::SE3 &desired_pose,
+                               const state_space::JointSpace *reference_ptr,
+                               bool check_collision) const;
 
         bool nearestSolution(state_space::JointSpace &solution,
                              const state_space::SE3 &desired_pose,
@@ -144,15 +145,16 @@ namespace my_collision_detection {
         }
 
         bool getCurrentLinkTransform(state_space::SE3 &LinkTransform, const std::string &link_name,
-                              const state_space::JointSpace &joint_angles) const
+                                     const state_space::JointSpace &joint_angles) const
         {
-            return _kinematics_ptr->getLinkTransform(LinkTransform,link_name,getCurrentJointAngles());
+            return _kinematics_ptr->getLinkTransform(LinkTransform, link_name, getCurrentJointAngles());
         }
 
 
         bool getEndEffectorPose(state_space::SE3 &ee_transform) const
         {
-            return getCurrentLinkTransform(ee_transform,_kinematics_ptr->getEndEffectorName(),getCurrentJointAngles());
+            return getCurrentLinkTransform(ee_transform, _kinematics_ptr->getEndEffectorName(),
+                                           getCurrentJointAngles());
         }
     };
 

@@ -14,9 +14,9 @@ namespace planner {
 
 
     template<typename T>
-    struct RRT_REQUEST{
+    struct RRT_REQUEST {
     public:
-        RRT_REQUEST(const T &start,const T&goal,double time_limit = 5)
+        RRT_REQUEST(const T &start, const T &goal, double time_limit = 5)
                 : _start(start),
                   _goal(goal),
                   _time_limit(time_limit)
@@ -34,19 +34,16 @@ namespace planner {
     template<typename T>
     class RRT {
     protected:
-        std::deque<Vertex < T>, Eigen::aligned_allocator<Vertex < T>>>
-        _nodes;
+        std::deque<Vertex<T>>
+                _nodes;
 
-        std::unordered_map<T, Vertex < T> *, std::function<size_t(T)>, std::equal_to<T>,
-        Eigen::aligned_allocator<std::pair<T, Vertex < T> *>>>
-        _node_map;
+        std::unordered_map<T, Vertex<T> *, std::function<size_t(T)>>
+                _node_map;
 
-        Vertex <T> *_tail;
+        Vertex<T> *_tail;
         T _start, _goal;
 
         bool _forward;
-
-        bool _have_start;
 
         const int _dimensions;
 
@@ -74,7 +71,7 @@ namespace planner {
 
         std::function<bool(const T &, const T &)> _state_validate_func;
 
-        virtual Vertex <T> *_nearest(const T &current_state, double *distance_out)
+        virtual Vertex<T> *_nearest(const T &current_state, double *distance_out)
         {
             //K-NN search
             std::vector<double> data(_dimensions);
@@ -100,7 +97,7 @@ namespace planner {
             return _node_map[point];
         }
 
-        virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source)
+        virtual Vertex<T> *_steer(const T &rand_state, Vertex<T> *source)
         {
             double distance = _step_len;
             if (!source) {
@@ -121,7 +118,7 @@ namespace planner {
             return &_nodes.back();
         }
 
-        bool _isGoalReached(Vertex <T> *node_end)
+        bool _isGoalReached(Vertex<T> *node_end)
         {
             if (_step_len > 1 && _goal_max_dist < 1) {
                 throw std::invalid_argument(
@@ -151,7 +148,7 @@ namespace planner {
                 return true;
         };
 
-        virtual void _extract_path(std::vector<T, Eigen::aligned_allocator<T>> &vectorOut, bool reverse)
+        virtual void _extract_path(std::vector<T> &vectorOut, bool reverse)
         {
             const Vertex<T> *vertex = _tail;
             if (reverse) {
@@ -184,8 +181,7 @@ namespace planner {
                 : _dimensions(dimensions),
                   _node_map(20, hashT),
                   _state_validate_func(NULL),
-                  _d_min(0.1),
-                  _have_start(false)
+                  _d_min(0.1)
         {
             _bounds_ptr = nullptr;
             _kd_tree = std::make_shared<flann::Index<flann::L2_Simple<double>>>(flann::KDTreeSingleIndexParams());
@@ -197,7 +193,7 @@ namespace planner {
             setMaxStepLen(5);
             setMaxIterations(10000);
             setGoalBias(0.1);
-            setGoalMaxDist(0.15);
+            setGoalMaxDist(_step_len);
         };
 
         virtual ~RRT() = default;
@@ -250,7 +246,7 @@ namespace planner {
             _state_validate_func = state_validate_func;
         }
 
-        const Vertex <T> *RootVertex() const
+        const Vertex<T> *RootVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -258,7 +254,7 @@ namespace planner {
         }
 
 
-        const Vertex <T> *LastVertex() const
+        const Vertex<T> *LastVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -312,7 +308,7 @@ namespace planner {
             }
         }
 
-        void constructPlan(const RRT_REQUEST<T> & rrtRequest)
+        void constructPlan(const RRT_REQUEST<T> &rrtRequest)
         {
             setStartState(rrtRequest._start);
             _goal = rrtRequest._goal;
@@ -323,12 +319,12 @@ namespace planner {
         virtual bool planning()
         {
             time_t start(clock());
-            double time {};
+            double time{};
             for (int i = 0; i < MaxIterations(); ++i) {
-                time += (double)(clock() -start)/CLOCKS_PER_SEC;
-                if(time >= _time_limit){
-                    LOG(ERROR)<<"No path find within "<<_time_limit<<" seconds"
-                    <<" now iterates "<<i<< "times";
+                time += (double) (clock() - start) / CLOCKS_PER_SEC;
+                if (time >= _time_limit) {
+                    LOG(ERROR) << "No path find within " << _time_limit << " seconds"
+                               << " now iterates " << i << "times";
                     return false;
                 }
                 Vertex<T> *new_vertex;
@@ -344,13 +340,13 @@ namespace planner {
                 }
 
             }
-            LOG(ERROR)<<"No path find within "<<MaxIterations()<<" iterations";
+            LOG(ERROR) << "No path find within " << MaxIterations() << " iterations";
             return false;
         }
 
-        std::vector<T, Eigen::aligned_allocator<T>> GetPath(bool reverse = false)
+        std::vector<T> GetPath(bool reverse = false)
         {
-            std::vector<T, Eigen::aligned_allocator<T>> path;
+            std::vector<T> path;
             _extract_path(path, reverse);
             path.template emplace_back(_goal);
             return path;

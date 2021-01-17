@@ -41,9 +41,10 @@ namespace my_kinematics {
     { return (val > 0) - (val < 0); };
 
 
-    MOVEIT_CLASS_FORWARD(Kinematics);
-    typedef std::unordered_map<std::string, state_space::SE3, std::hash<std::string>, std::equal_to<std::string>,
-            Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > joint_transform_map;
+    MOVEIT_CLASS_FORWARD(Kinematics)
+
+    typedef std::unordered_map<std::string, state_space::SE3> joint_transform_map;
+
     /**
      * @brief Kinematics class computes fk and ik.
      */
@@ -63,9 +64,7 @@ namespace my_kinematics {
         std::string _EE_NAME, _BASE_NAME;
 
         /**@brief single home configuration for every joint*/
-        std::map<std::string, state_space::SE3, std::less<std::string>,
-                Eigen::aligned_allocator<std::pair<std::string, state_space::SE3> > > _joint_configurations;
-
+        std::map<std::string, state_space::SE3> _joint_configurations;
 
         std::unordered_map<std::string, std::string> _link_joint_map;
 
@@ -117,7 +116,11 @@ namespace my_kinematics {
 
     public:
 
-        explicit Kinematics(const std::string &yaml_name, const analytical_ik_handled_t &analytical_ik_fuck = nullptr);
+        explicit Kinematics(const std::string &yaml_name, analytical_ik_handled_t analytical_ik_fuck = nullptr)
+                : analytical_ik_func_(std::move(analytical_ik_fuck))
+        {
+            _loadModel(yaml_name);
+        }
 
         explicit Kinematics(const state_space::vector_SE3 &all_screw_axes, const state_space::SE3 &home_configuration,
                             bool isInBodyFrame = false);
@@ -220,7 +223,7 @@ namespace my_kinematics {
         };
 
 
-        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+        bool nearestIkSolution(state_space::JointSpace &raw_solution,
                                const state_space::SE_3 &desired_pose,
                                const state_space::JointSpace &reference,
                                bool isConsecutive);
@@ -228,35 +231,36 @@ namespace my_kinematics {
         /**\note only can be used when reference distance lower than 0.2/99.9% 0.5/99% 2.0/90%
          * but when only have single joint difference, this method is preferred.
          * */
-        bool nearestIkSolution(state_space::JointSpace& raw_solution,
-                                           const state_space::SE_3 &desired_pose,
-                                           const state_space::JointSpace &reference)
+        bool nearestIkSolution(state_space::JointSpace &raw_solution,
+                               const state_space::SE_3 &desired_pose,
+                               const state_space::JointSpace &reference)
         {
             raw_solution = reference;
-            return nIk(desired_pose,raw_solution);
+            return nIk(desired_pose, raw_solution);
         }
-        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+
+        bool nearestIkSolution(state_space::JointSpace &raw_solution,
                                const state_space::SE3 &desired_pose,
                                const state_space::JointSpace &reference)
         {
             raw_solution = reference;
-            return nIk(desired_pose,raw_solution);
+            return nIk(desired_pose, raw_solution);
         }
 
-        bool nearestIkSolution(state_space::JointSpace& raw_solution,
+        bool nearestIkSolution(state_space::JointSpace &raw_solution,
                                const Eigen::Isometry3d &desired_pose,
-                                                  const state_space::JointSpace &reference,
-                                                  bool isConsecutive)
+                               const state_space::JointSpace &reference,
+                               bool isConsecutive)
         {
-            return nearestIkSolution(raw_solution,desired_pose.matrix(), reference, isConsecutive);
+            return nearestIkSolution(raw_solution, desired_pose.matrix(), reference, isConsecutive);
         };
 
-        bool nearestIkSolution(state_space::JointSpace& raw_solution,
-                                                  const state_space::SE3 &desired_pose,
-                                                  const state_space::JointSpace &reference,
-                                                  bool isConsecutive)
+        bool nearestIkSolution(state_space::JointSpace &raw_solution,
+                               const state_space::SE3 &desired_pose,
+                               const state_space::JointSpace &reference,
+                               bool isConsecutive)
         {
-            return nearestIkSolution(raw_solution,desired_pose.SE3Matrix(), reference, isConsecutive);
+            return nearestIkSolution(raw_solution, desired_pose.SE3Matrix(), reference, isConsecutive);
         };
 
         state_space::JointSpace

@@ -1,22 +1,18 @@
 #include <iostream>
 #include "Kinematics/Kinematics.h"
 
-namespace my_kinematics{
-    Kinematics::Kinematics(const std::string &yaml_name, const analytical_ik_handled_t &analytical_ik_fuck)
-    {
-        analytical_ik_func_ = analytical_ik_fuck;
-        _loadModel(yaml_name);
-    }
+namespace my_kinematics {
 
     Kinematics::Kinematics(const state_space::vector_SE3 &all_screw_axes, const state_space::SE3 &home_configuration,
                            bool isInBodyFrame)
+            : all_screw_axes_(all_screw_axes),
+              home_configuration_(home_configuration),
+              IN_BODY_(isInBodyFrame),
+              ee_configuration_(state_space::SE3::Zero()),
+              mount_configuration_(state_space::SE3::Zero()),
+              analytical_ik_func_(nullptr)
     {
-        all_screw_axes_ = all_screw_axes;
-        home_configuration_ = home_configuration;
-        IN_BODY_ = isInBodyFrame;
-        ee_configuration_ = state_space::SE3();
-        mount_configuration_ = state_space::SE3();
-        analytical_ik_func_ = nullptr;
+
     }
 
     void Kinematics::_loadModel(const std::string &yaml_name)
@@ -64,9 +60,9 @@ namespace my_kinematics{
                     _joint_configurations.insert(std::make_pair(it.first, state_space::SE3(it.second)));
                 }
             }
-            const YAML::Node& link_names = doc["aubo_i5"]["link_names"];
+            const YAML::Node &link_names = doc["aubo_i5"]["link_names"];
             for (YAML::const_iterator it = link_names.begin(); it != link_names.end(); ++it) {
-                _link_joint_map.insert(std::make_pair(it->first.as<std::string>(),it->second.as<std::string>()));
+                _link_joint_map.insert(std::make_pair(it->first.as<std::string>(), it->second.as<std::string>()));
             }
 
         }
@@ -118,8 +114,9 @@ namespace my_kinematics{
         return jacobian_matrix;
     }
 
-    bool Kinematics::_nIkInSpace(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
-                                 double ev)
+    bool
+    Kinematics::_nIkInSpace(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
+                            double ev)
     {
         int i = 0;
         int max_iterations = 50;
@@ -144,8 +141,9 @@ namespace my_kinematics{
         return !err;
     }
 
-    bool Kinematics::_nIkInBody(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
-                                double ev)
+    bool
+    Kinematics::_nIkInBody(const state_space::SE_3 &desired_pose, state_space::JointSpace &joint_angles, double eomg,
+                           double ev)
     {
         int i = 0;
         int max_iterations = 50;
@@ -184,7 +182,7 @@ namespace my_kinematics{
     bool Kinematics::allValidIkSolutions(Eigen::MatrixXd &joint_solutions, const state_space::SE_3 &desired_pose,
                                          const state_space::JointSpace *reference)
     {
-        joint_solutions.resize(0,0);
+        joint_solutions.resize(0, 0);
         IK_SINGULAR_CODE ret_code = analyticalIkSolutions(joint_solutions, desired_pose, reference);
         if (ret_code == NO_SOLUTIONS) {
             state_space::JointSpace solution = reference ? *reference : state_space::JointSpace::Zero();
@@ -209,7 +207,7 @@ namespace my_kinematics{
     }
 
     bool
-    Kinematics::nearestIkSolution(state_space::JointSpace& raw_solution,
+    Kinematics::nearestIkSolution(state_space::JointSpace &raw_solution,
                                   const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference,
                                   bool isConsecutive)
     {
@@ -230,7 +228,8 @@ namespace my_kinematics{
     }
 
     state_space::JointSpace
-    Kinematics::directedNearestIkSolution(const state_space::SE_3 &desired_pose, const state_space::JointSpace &reference,
+    Kinematics::directedNearestIkSolution(const state_space::SE_3 &desired_pose,
+                                          const state_space::JointSpace &reference,
                                           const state_space::JointSpace &tangent_reference)
     {
         state_space::JointSpace solution{reference};

@@ -31,6 +31,35 @@ namespace planner {
                                     const std::string & reference_frame,
                                     const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper
                                     );
+
+        static void getCartesianLine(state_space::vector_SE3 & waypoints,
+                                     const state_space::SE3 &start_point,
+                                     const state_space::SE3& goal_point,
+                                     double cartesian_step =0.01);
+
+        static void getCartesianLine(state_space::vector_SE3 &waypoints,
+                                     const state_space::SE3 &start_point,
+                                     const Eigen::Vector3d &direction_vector,
+                                     double cartesian_step = 0.01);
+
+        /**
+         * \brief only consider position
+         * @param waypoints
+         * @param start_point
+         * @param center
+         * @param radian
+         */
+        static void getCartesianCircle(state_space::vector_SE3 &waypoints,
+                                       const state_space::SE3 &start_point,
+                                       const state_space::SE3 &center,
+                                       double radian,
+                                       double step);
+
+        static void getCartesianCircle(state_space::vector_SE3 &waypoints,
+                                       const Eigen::Vector3d &start_point,
+                                       const Eigen::Vector3d &inter_point,
+                                       const Eigen::Vector3d &end_point,
+                                       double step);
     };
 }
 

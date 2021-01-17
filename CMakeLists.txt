@@ -93,7 +93,7 @@ target_link_libraries(cartesianPlanner Kinematics collision_helper StateSpace)
 
 #executale
 add_executable(NursingRobot src/main.cpp)
-target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper StateSpace)
+target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper cartesianPlanner)
 
 catkin_add_gtest(6dTest test/rrt_test.cpp)
 target_link_libraries(6dTest StateSpace RRT ${catkin_LIBRARIES} collision_helper)

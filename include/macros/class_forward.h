@@ -45,6 +45,12 @@
 #include <forward_list>
 
 #define DECLARE_SEQUENTIAL_CONTAINER(Name, Type)                                                                       \
+  typedef std::vector<Type, Eigen::aligned_allocator<Type> >  vector_##Name;                                             \
+  typedef std::deque<Type,  Eigen::aligned_allocator<Type>>   deque_##Name;                                              \
+  typedef std::list<Type,   Eigen::aligned_allocator<Type>>    list_##Name;                                               \
+  typedef std::forward_list<Type,   Eigen::aligned_allocator<Type>> forward_list_##Name;
+
+#define DECLARE_NO_ALIGN_SEQUENTIAL_CONTAINER(Name, Type)                                                                       \
   typedef std::vector<Type>  vector_##Name;                                             \
   typedef std::deque<Type>   deque_##Name;                                              \
   typedef std::list<Type>    list_##Name;                                               \
@@ -111,6 +117,10 @@
 #define ALIGNED_CLASS_STL_FORWARD(C)                                                                                   \
   class C;                                                                                                             \
   DECLARE_SEQUENTIAL_CONTAINER(C, C);
+
+#define DONT_ALIGN_CLASS_STL_FORWARD(C)                                                                               \
+  class C;                                                                                                             \
+  DECLARE_NO_ALIGN_SEQUENTIAL_CONTAINER(C,C);
 
 
 #endif //NURSINGROBOT_CLASS_FORWARD_H

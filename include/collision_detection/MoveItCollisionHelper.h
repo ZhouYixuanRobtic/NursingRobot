@@ -3,7 +3,7 @@
 
 #include "MoveItCollisionHelperImpl.h"
 
-namespace my_collision_detection{
+namespace my_collision_detection {
 
     class MoveItCollisionHelper {
     private:
@@ -15,12 +15,11 @@ namespace my_collision_detection{
         MoveItCollisionHelper(const std::string &group_name, const std::string &yaml_name,
                               const my_kinematics::analytical_ik_handled_t &analytical_ik_func)
                 : _nh(boost::make_shared<ros::NodeHandle>("~")),
-                  _moveit_collision_helper_impl_ptr(std::make_shared<MoveItCollisionHelperImpl>(group_name, yaml_name, analytical_ik_func,
-                                                                                                nullptr))
+                  _moveit_collision_helper_impl_ptr(
+                          new MoveItCollisionHelperImpl(group_name, yaml_name, analytical_ik_func,
+                                                        std::make_shared<JointStatesSubscriber>(_nh, "/joint_states",
+                                                                                                100)))
         {
-
-            _moveit_collision_helper_impl_ptr->setJointSubscriber(
-                    std::make_shared<JointStatesSubscriber>(_nh,"/joint_states",100));
 
         }
 
@@ -40,10 +39,13 @@ namespace my_collision_detection{
         const my_kinematics::KinematicsPtr &getKinematicsPtr() const
         { return _moveit_collision_helper_impl_ptr->getKinematicsPtr(); }
 
-        state_space::vector_JointSpace allValidSolutions(const state_space::SE3 &desired_pose,
-                                                         const state_space::JointSpace *reference_ptr,
-                                                         bool check_collision = true) const
-        { return _moveit_collision_helper_impl_ptr->allValidSolutions(desired_pose, reference_ptr, check_collision); }
+        bool allValidSolutions(state_space::vector_JointSpace &final_results, const state_space::SE3 &desired_pose,
+                               const state_space::JointSpace *reference_ptr,
+                               bool check_collision = true) const
+        {
+            return _moveit_collision_helper_impl_ptr->allValidSolutions(final_results, desired_pose, reference_ptr,
+                                                                        check_collision);
+        }
 
         bool nearestSolution(state_space::JointSpace &solution,
                              const state_space::SE3 &desired_pose,
@@ -60,7 +62,10 @@ namespace my_collision_detection{
 
         bool getCurrentLinkTransform(state_space::SE3 &LinkTransform, const std::string &link_name,
                                      const state_space::JointSpace &joint_angles) const
-        { return _moveit_collision_helper_impl_ptr->getCurrentLinkTransform(LinkTransform,link_name,getCurrentJointAngles());}
+        {
+            return _moveit_collision_helper_impl_ptr->getCurrentLinkTransform(LinkTransform, link_name,
+                                                                              getCurrentJointAngles());
+        }
 
         state_space::SE3 getEndEffectorPose() const
         {

@@ -10,7 +10,7 @@
 
 namespace state_space {
 
-    ALIGNED_CLASS_STL_FORWARD(JointSpace)
+    DONT_ALIGN_CLASS_STL_FORWARD(JointSpace)
 
     class JointSpace : private virtual StateSpace<JointSpace> {
     protected:

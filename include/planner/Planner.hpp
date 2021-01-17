@@ -119,14 +119,6 @@ namespace planner {
         return result;
     }
 
-    static state_space::SO3 sphereInterpolate(const state_space::SO3 &source,
-                                              const state_space::SO3 &target,
-                                              double lambda)
-    {
-        Eigen::Quaterniond start_quaternion(source.Quaternion());
-        auto temp_quaternion = start_quaternion.slerp(lambda,Eigen::Quaterniond(target.Quaternion()));
-        return state_space::SO3(temp_quaternion.coeffs());
-    }
     /**
      * \brief compact interpolate for SE3
      * */
@@ -135,11 +127,18 @@ namespace planner {
                                               double lambda)
     {
         auto temp_translation = interpolate(source.translationPart(), target.translationPart(), lambda);
-        auto temp_SO3 = sphereInterpolate(source.SO3Part(),target.SO3Part(),lambda);
+        auto temp_SO3 = interpolate(source.SO3Part(),target.SO3Part(),lambda);
         return state_space::SE3(temp_SO3, temp_translation);
     }
 
-
+    static state_space::SE3 combinedInterpolate(const state_space::SE3 &source,
+                                                const state_space::SE3 &target,
+                                                double lambda)
+    {
+        auto temp_translation = interpolate(source.translationPart(), target.translationPart(), lambda);
+        auto temp_SO3 = bezierInterpolate(source.SO3Part(),target.SO3Part(),lambda);
+        return state_space::SE3(temp_SO3, temp_translation);
+    }
 
     /**
      * @brief Calculate the distance between two states

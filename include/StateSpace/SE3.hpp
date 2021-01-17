@@ -45,7 +45,7 @@ namespace state_space {
         return ad_ret;
     }
 
-    ALIGNED_CLASS_STL_FORWARD(SE3)
+    DONT_ALIGN_CLASS_STL_FORWARD(SE3)
 
     class SE3 : private virtual StateSpace<SE3> {
     protected:
@@ -128,7 +128,7 @@ namespace state_space {
             *this = SE3(SO3(temp_SO_3), transformation_matrix.block<3, 1>(0, 3));
         }
 
-        explicit SE3(const SO3 &SO3_part, const Eigen::Vector3d &translation_part)
+        SE3(const SO3 &SO3_part, const Eigen::Vector3d &translation_part)
         {
             SE3_matrix_ << SO3_part.SO3Matrix(), translation_part,
                     0, 0, 0, 1;
@@ -188,7 +188,10 @@ namespace state_space {
         {
             return SE3_matrix_.block<3, 1>(0, 3);
         }
-
+        Eigen::Vector4d HomoTransPart() const
+        {
+            return SE3_matrix_.col(3);
+        }
         Eigen::Matrix<double, 7, 1> pose_with_quaternion() const
         {
             Eigen::Matrix<double, 7, 1> result;
@@ -350,6 +353,18 @@ namespace state_space {
         {
             state_space::R6 temp_twist;
             temp_twist << 0, 0, 1, 0, 0, 0;
+            return SE3(temp_twist);
+        };
+        static SE3 UnitX()
+        {
+            state_space::R6 temp_twist;
+            temp_twist << 1, 0, 0, 0, 0, 0;
+            return SE3(temp_twist);
+        };
+        static SE3 UnitY()
+        {
+            state_space::R6 temp_twist;
+            temp_twist << 0, 1, 0, 0, 0, 0;
             return SE3(temp_twist);
         };
 

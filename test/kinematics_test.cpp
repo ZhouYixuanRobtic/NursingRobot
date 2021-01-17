@@ -60,7 +60,7 @@ TEST(KinematicsTest, AuboAnalyticalTest)
                         << "Coverage rate of analytical IK solution (equals to fk) doesn't reach 5 sigma level, but"
                         << ik_analytical_with_right_reference << "/" << max_iterations;
 
-    EXPECT_GE(ik_analytical_only_counter, 0.9999973 * max_iterations)
+    EXPECT_NEAR(ik_analytical_only_counter, 0.9999973 * max_iterations,3)
                         << "Coverage rate of analytical IK solution with zero reference doesn't reach 5 sigma level, but"
                         << ik_analytical_only_counter << "/" << max_iterations;
 

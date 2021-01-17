@@ -35,6 +35,7 @@ namespace state_space {
         return R3{-a_so3(1, 2), a_so3(0, 2), -a_so3(0, 1)};
     }
 
+    DONT_ALIGN_CLASS_STL_FORWARD(SO3)
 
     class SO3 : private virtual StateSpace<SO3> {
     private:
@@ -200,7 +201,18 @@ namespace state_space {
         {
             return SO3(dimensions);
         }
-
+        static SO3 UnitX()
+        {
+            return SO3(R3{1,0,0});
+        }
+        static SO3 UnitY()
+        {
+            return SO3(R3{0,1,0});
+        }
+        static SO3 UnitZ()
+        {
+            return SO3(R3{0,0,1});
+        }
         unsigned int Dimensions() const override
         {
             return _dimensions;

@@ -9,7 +9,7 @@
 
 namespace state_space {
 
-    ALIGNED_CLASS_STL_FORWARD(Rn)
+    DONT_ALIGN_CLASS_STL_FORWARD(Rn)
 
     class Rn : private virtual StateSpace<Rn> {
     protected:
@@ -108,15 +108,17 @@ namespace state_space {
         Rn random(std::default_random_engine &randomEngine, const Eigen::MatrixX2d *bounds_ptr) const override
         {
             Eigen::VectorXd result(_dimensions_);
+            std::uniform_real_distribution<double> x_distribution(0, 1);
             if (bounds_ptr != nullptr) {
-                std::uniform_real_distribution<double> x_distribution(0, 1);
                 for (int i = 0; i < this->_dimensions_; ++i) {
                     result[i] = bounds_ptr->col(1)[i] +
                                 x_distribution(randomEngine) * (bounds_ptr->col(0)[i] - bounds_ptr->col(1)[i]);
                 }
             } else {
                 //[-1,1]
-                result.setRandom();
+                for (int i = 0; i < this->_dimensions_; ++i) {
+                    result[i] = -1 + x_distribution(randomEngine) * 2;
+                }
             }
             return Rn(result);
         };
