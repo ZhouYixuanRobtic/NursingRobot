@@ -5,6 +5,8 @@
 
 namespace my_collision_detection {
 
+    MOVEIT_CLASS_FORWARD(MoveItCollisionHelper)
+
     class MoveItCollisionHelper {
     private:
         ros::NodeHandlePtr _nh;

@@ -7,11 +7,11 @@ TEST(cartesian_test,linearTest)
 {
     ros::AsyncSpinner spinner(2);
     spinner.start();
-    my_collision_detection::MoveItCollisionHelper moveItCollisionHelper("manipulator_i5",
-                                                                        "/home/xcy/WorkSpace/src/NursingRobot/config/aubo_i5.yaml",
-                                                                        my_kinematics::aubo_i5_analytical_IK);
+    my_collision_detection::MoveItCollisionHelperPtr moveItCollisionHelper(new my_collision_detection::MoveItCollisionHelper("manipulator_i5",
+                                                                                                                             "/home/xcy/WorkSpace/src/NursingRobot/config/aubo_i5.yaml",
+                                                                                                                             my_kinematics::aubo_i5_analytical_IK));
 
-    const auto & kinematic_ptr = moveItCollisionHelper.getKinematicsPtr();
+    const auto & kinematic_ptr = moveItCollisionHelper->getKinematicsPtr();
     auto current_pose = kinematic_ptr->fk(state_space::JointSpace::Zero());
     state_space::vector_SE3 cartesian_path;
     planner::CartesianPlanner::getCartesianLine(cartesian_path,current_pose,Eigen::Vector3d{-0.3,0.0,0});
@@ -33,15 +33,15 @@ TEST(cartesian_test, circleTest)
 {
     ros::AsyncSpinner spinner(2);
     spinner.start();
-    my_collision_detection::MoveItCollisionHelper moveItCollisionHelper("manipulator_i5",
+    my_collision_detection::MoveItCollisionHelperPtr moveItCollisionHelper(new my_collision_detection::MoveItCollisionHelper("manipulator_i5",
                                                                         "/home/xcy/WorkSpace/src/NursingRobot/config/aubo_i5.yaml",
-                                                                        my_kinematics::aubo_i5_analytical_IK);
+                                                                        my_kinematics::aubo_i5_analytical_IK));
 
-    const auto & kinematic_ptr = moveItCollisionHelper.getKinematicsPtr();
+    const auto & kinematic_ptr = moveItCollisionHelper->getKinematicsPtr();
     auto current_pose = kinematic_ptr->fk(state_space::JointSpace::Zero());
     state_space::vector_SE3 cartesian_path;
-    planner::CartesianPlanner::getCartesianCircle(cartesian_path,state_space::SE3(state_space::SO3::Zero(),Eigen::Vector3d{0,0,0}),
-                                                  state_space::SE3(state_space::SO3::Zero(),Eigen::Vector3d{-0.2,0,0}),
+    planner::CartesianPlanner::getCartesianCircle(cartesian_path,state_space::SE3(state_space::SO3::Zero(),Eigen::Vector3d{-0.03,0,0}),
+                                                  state_space::SE3(state_space::SO3::Zero(),Eigen::Vector3d{-0.23,0,0}),
                                                   -2*M_PI);
     state_space::vector_JointSpace trajectory;
     clock_t start(clock());

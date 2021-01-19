@@ -16,7 +16,7 @@ void test_no_collision_func(int dimensions = -1, const Eigen::MatrixX2d *bounds_
 
     rrt_2d.setStepLen(0.05);
     rrt_2d.setGoalMaxDist(0.05);
-    rrt_2d.constructPlan(planner::RRT_REQUEST<SPCIFIC_STATE>(start_state, goal_state, 50));
+    rrt_2d.constructPlan(planner::PLAN_REQUEST<SPCIFIC_STATE>(start_state, goal_state, 50));
     std::vector<SPCIFIC_STATE> path;
     clock_t start(clock());
     if (rrt_2d.planning()) {
@@ -65,7 +65,7 @@ void test_with_collision_func(int dimensions = -1, const Eigen::MatrixX2d *bound
     rrt_2d.setStepLen(0.05);
     rrt_2d.setGoalMaxDist(0.05);
     rrt_2d.setMaxIterations(1e7);
-    rrt_2d.constructPlan(planner::RRT_REQUEST<SPCIFIC_STATE>(start_state, goal_state, 1e7));
+    rrt_2d.constructPlan(planner::PLAN_REQUEST<SPCIFIC_STATE>(start_state, goal_state, 1e7));
     std::vector<SPCIFIC_STATE> path;
     if (rrt_2d.planning()) {
         clock_t end(clock());

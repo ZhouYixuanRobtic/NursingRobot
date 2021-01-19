@@ -2,8 +2,6 @@
 #define NURSINGROBOT_CARTESIANPLANNER_H
 
 #include "macros/class_forward.h"
-#include "StateSpace/SE3.hpp"
-#include "StateSpace/JointSpace.hpp"
 #include "collision_detection/MoveItCollisionHelper.h"
 
 namespace planner {
@@ -50,7 +48,7 @@ namespace planner {
     /** \brief Struct for containing max_step for computeCartesianPath
     Setting translation to zero will disable checking for translations and the same goes for rotation */
     struct MaxEEFStep {
-        MaxEEFStep(double translation = 0.0, double rotation = 0.0) : translation(translation), rotation(rotation)
+        explicit MaxEEFStep(double translation = 0.0, double rotation = 0.0) : translation(translation), rotation(rotation)
         {
         }
 
@@ -83,7 +81,7 @@ namespace planner {
                                            const MaxEEFStep &max_step,
                                            const JumpThreshold &jump_threshold,
                                            const std::string &reference_frame,
-                                           const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper);
+                                           const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper);
 
         static double computeCartesianPath(const state_space::JointSpace &current_joint_angles,
                                            const state_space::vector_SE3 &wayPoints,
@@ -91,7 +89,7 @@ namespace planner {
                                            const MaxEEFStep &max_step,
                                            const JumpThreshold &jump_threshold,
                                            const std::string &reference_frame,
-                                           const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper
+                                           const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper
         );
 
         static void getCartesianLine(state_space::vector_SE3 &waypoints,

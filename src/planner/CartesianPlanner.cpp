@@ -87,7 +87,7 @@ namespace planner {
                                                   const MaxEEFStep &max_step,
                                                   const JumpThreshold &jump_threshold,
                                                   const std::string &reference_frame,
-                                                  const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper)
+                                                  const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper)
     {
 
         double translation_distance = (start.translationPart() -
@@ -109,7 +109,7 @@ namespace planner {
         seg_traj.clear();
         //start
         state_space::JointSpace current_joints;
-        if (!moveItCollisionHelper.nearestSolution(current_joints, start, current_joint_angles, false))
+        if (!moveItCollisionHelper->nearestSolution(current_joints, start, current_joint_angles, false))
             return 0.0;
         seg_traj.emplace_back(current_joints);
         current_joint_angles = current_joints;
@@ -118,7 +118,7 @@ namespace planner {
         while (r_percentage <= 1.0) {
 
             auto intermediate_state = planner::sphereInterpolate(start, target, r_percentage);
-            if (moveItCollisionHelper.nearestSolution(current_joints, intermediate_state, current_joints, true))
+            if (moveItCollisionHelper->nearestSolution(current_joints, intermediate_state, current_joints, true))
                 seg_traj.emplace_back(current_joints);
             else
                 break;
@@ -137,11 +137,11 @@ namespace planner {
                                                   const MaxEEFStep &max_step,
                                                   const JumpThreshold &jump_threshold,
                                                   const std::string &reference_frame,
-                                                  const my_collision_detection::MoveItCollisionHelper &moveItCollisionHelper)
+                                                  const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper)
     {
         double percentage_solved = 0.0;
 
-        const auto &kinematics_ptr = moveItCollisionHelper.getKinematicsPtr();
+        const auto &kinematics_ptr = moveItCollisionHelper->getKinematicsPtr();
         state_space::SE3 start_pose;
         kinematics_ptr->getLinkTransform(start_pose, reference_frame, current_joint_angles);
         bool need_rotate = reference_frame == kinematics_ptr->getBaseName();

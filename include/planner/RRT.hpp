@@ -9,14 +9,36 @@
 #include <random>
 
 namespace planner {
+    enum PLANNER_TYPE{
+        RRT_SIMPLE,
+        RRT_CONNECT,
+        RRT_STAR,
+        INFORMED_RRT
+    };
+
     template<typename T>
     class RRT;
-
+    template<typename T>
+    std::shared_ptr<RRT<T>> createPlanner(const PLANNER_TYPE & planner_type,std::size_t dimensions = 6)
+    {
+        switch (planner_type) {
+            case RRT_SIMPLE:
+                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
+            case RRT_CONNECT:
+                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
+            case RRT_STAR:
+                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
+            case INFORMED_RRT:
+                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
+            default:
+                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
+        }
+    }
 
     template<typename T>
-    struct RRT_REQUEST {
+    struct PLAN_REQUEST {
     public:
-        RRT_REQUEST(const T &start, const T &goal, double time_limit = 5)
+        PLAN_REQUEST(const T &start, const T &goal, double time_limit = 5)
                 : _start(start),
                   _goal(goal),
                   _time_limit(time_limit)
@@ -219,7 +241,7 @@ namespace planner {
 
         double StepLen() const
         { return _step_len; }
-
+        //TODO:: absolute & relative step len should be distinguishable
         void setStepLen(double stepSize)
         { _step_len = stepSize; }
 
@@ -308,7 +330,7 @@ namespace planner {
             }
         }
 
-        void constructPlan(const RRT_REQUEST<T> &rrtRequest)
+        void constructPlan(const PLAN_REQUEST<T> &rrtRequest)
         {
             setStartState(rrtRequest._start);
             _goal = rrtRequest._goal;
@@ -353,6 +375,8 @@ namespace planner {
         }
 
     };
+
+
 }
 
 
