@@ -103,3 +103,6 @@ target_link_libraries(kTest ${catkin_LIBRARIES} collision_helper)
 
 catkin_add_gtest(cTest test/moveit_collision_helper_test.cpp)
 target_link_libraries(cTest ${catkin_LIBRARIES} collision_helper  )
+
+catkin_add_gtest(carTest test/cartesian_test.cpp)
+target_link_libraries(carTest ${catkin_LIBRARIES} cartesianPlanner)

@@ -45,7 +45,7 @@ namespace planner {
 
         bool _forward;
 
-        const int _dimensions;
+        const std::size_t _dimensions;
 
         std::size_t _iter_max{};
 
@@ -175,7 +175,7 @@ namespace planner {
 
         RRT &operator=(const RRT<T> &) = delete;
 
-        RRT(std::function<size_t(T)> hashT, int dimensions, bool forward = true,
+        RRT(std::function<size_t(T)> hashT, std::size_t dimensions, bool forward = true,
             std::function<T(double *)> arrayToT = NULL,
             std::function<void(T, double *)> TToArray = NULL)
                 : _dimensions(dimensions),

@@ -254,6 +254,28 @@ namespace state_space {
             //pr = ||log(Q1^{-1}*Q2)||, which is bi-invariant
             return (to - *this).Vector().norm();
         };
+        /**
+         * \brief according to Jonathan H. Manton
+         * A GLOBALLY CONVERGENT NUMERICAL ALGORITHM FOR COMPUTING THE CENTRE OF MASS ON COMPACT LIE GROUPS
+         * @param list n elements of SO3
+         * @return center of mass
+         */
+        static SO3 average(const vector_SO3 & list,double error_thresh = 1e-3)
+        {
+            auto average_element = list.front();
+            while(true)
+            {
+                Eigen::Vector3d  omega{Eigen::Vector3d::Zero()};
+                for(const auto & item:list){
+                    omega += (item-average_element).Vector();
+                }
+                omega *= (double)1.0/list.size();
+                if(omega.norm() < error_thresh)
+                    return average_element;
+                else
+                    average_element = average_element+SO3(omega);
+            }
+        }
 
         static SO_3 MatrixExp(const so_3 &so3_)
         {
