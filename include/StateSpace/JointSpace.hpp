@@ -16,15 +16,18 @@ namespace state_space {
     protected:
         unsigned int _dimensions_;
         Eigen::VectorXd _data_;
-
+        //make all elements in -pi,pi
+        void _restrict(double &val)
+        {
+            if (val > M_PI)
+                val -= 2 * M_PI;
+            else if (val < -M_PI)
+                val += 2 * M_PI;
+        }
         void _restrict()
         {
             for (int i = 0; i < _data_.size(); ++i) {
-                auto &val = _data_[i];
-                if (val > _upper_limit_)
-                    val -= 2 * _upper_limit_;
-                else if (val < _lower_limit_)
-                    val += 2 * _upper_limit_;
+                _restrict(_data_[i]);
             }
         }
 
@@ -162,6 +165,15 @@ namespace state_space {
             return this->distance(JointSpace(input));
         };
 
+        double distance(const JointSpace &from,const JointSpace &to, const Eigen::Vector2d & limits)
+        {
+            //
+            double limit_minimum_dist = limits[1]-limits[0];
+            _restrict(limit_minimum_dist);
+            limit_minimum_dist = fabs(limit_minimum_dist);
+            double limit_max_dist = 2*M_PI - limit_minimum_dist;
+
+        }
         double norm() const override
         {
             return this->_data_.norm();
@@ -203,8 +215,8 @@ namespace state_space {
         }
 
     private:
-        const double _lower_limit_{-M_PI};
-        const double _upper_limit_{M_PI};
+        double _lower_limit_{-M_PI};
+        double _upper_limit_{M_PI};
     };
 
 }

@@ -114,11 +114,12 @@ namespace planner {
 
         virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source,bool check_collision)
         {
-            double distance = _step_len;
+            double distance{};
             if (!source) {
                 source = _nearest(rand_state, &distance);
                 if (!source) return nullptr;
             }
+            if(distance > )
             double steer_length =
                     _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
                                                                                                          this->StepLen());

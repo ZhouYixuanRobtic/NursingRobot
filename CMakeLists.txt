@@ -108,3 +108,6 @@ target_link_libraries(carTest ${catkin_LIBRARIES} cartesianPlanner)
 
 catkin_add_gtest(planning_interface_test test/planning_interface_test.cpp)
 target_link_libraries(planning_interface_test ${catkin_LIBRARIES} PlanningInterface)
+
+catkin_add_gtest(state_space_test test/state_space_test.cpp)
+target_link_libraries(state_space_test ${catkin_LIBRARIES} StateSpace ${GLOG_LIBRARIES})
