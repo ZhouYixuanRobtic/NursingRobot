@@ -164,6 +164,10 @@ namespace my_kinematics {
         void setEndEffectorName(const std::string &ee_name)
         { _EE_NAME = ee_name; }
 
+        std::size_t getJointNums()
+        {
+            return all_screw_axes_.size();
+        }
         /**
          * @brief set an analytical Ik from outside
          * @param ik_func an analytical IK function;

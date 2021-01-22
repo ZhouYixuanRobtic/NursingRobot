@@ -30,10 +30,12 @@ namespace planner {
             revolute = jt_revolute;    // Radians
             prismatic = jt_prismatic;  // Meters
         }
+
         static JumpThreshold DISABLE_JUMP_CHECK()
         {
             return JumpThreshold();
         }
+
         static JumpThreshold JUMP_FREE()
         {
             return JumpThreshold(2.0);
@@ -48,7 +50,8 @@ namespace planner {
     /** \brief Struct for containing max_step for computeCartesianPath
     Setting translation to zero will disable checking for translations and the same goes for rotation */
     struct MaxEEFStep {
-        explicit MaxEEFStep(double translation = 0.0, double rotation = 0.0) : translation(translation), rotation(rotation)
+        explicit MaxEEFStep(double translation = 0.0, double rotation = 0.0) : translation(translation),
+                                                                               rotation(rotation)
         {
         }
 
@@ -89,8 +92,7 @@ namespace planner {
                                            const MaxEEFStep &max_step,
                                            const JumpThreshold &jump_threshold,
                                            const std::string &reference_frame,
-                                           const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper
-        );
+                                           const my_collision_detection::MoveItCollisionHelperPtr &moveItCollisionHelper);
 
         static void getCartesianLine(state_space::vector_SE3 &waypoints,
                                      const state_space::SE3 &start_point,
@@ -108,6 +110,7 @@ namespace planner {
                                        double radian,
                                        bool const_orientation = true,
                                        double step = 0.01);
+
         /**
         * \brief only consider position
         * @param waypoints

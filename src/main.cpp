@@ -7,10 +7,10 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include "Kinematics/custom_kinematics.hpp"
 #include "planner/CartesianPlanner.h"
-#include "planner/RRT.hpp"
+#include "planner/PlannerMethod.hpp"
 int main(int argc, char **argv)
 {
-
+    /*
     logger a( argv[0]);
     ros::init(argc, argv, "NursingRobot");
     ros::AsyncSpinner spinner(2);
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
     std::size_t iter= 0;
     while(++iter<trajectory.size()){
         std::cout<<planner::distance(trajectory[iter-1],trajectory[iter])<<std::endl;
-    }*/
+    }*
     namespace rvt = rviz_visual_tools;
     moveit_visual_tools::MoveItVisualTools visual_tools("base_link");
     visual_tools.deleteAllMarkers();  // clear all old markers
@@ -58,6 +58,8 @@ int main(int argc, char **argv)
     for (const auto & waypoint : waypoints)
         visual_tools.publishAxis(waypoint, rvt::SMALL);
     visual_tools.trigger();
-    spinner.stop();
+    spinner.stop();*/
+    auto lazy_rrt_ptr = planner::createPlanner<state_space::JointSpace>(planner::LAZY_RRT,6);
+
     return 0;
 }

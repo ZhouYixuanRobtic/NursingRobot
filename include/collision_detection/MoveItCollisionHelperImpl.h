@@ -103,12 +103,16 @@ namespace my_collision_detection {
         bool isPathValid(const T &from,
                          const T &to) const
         {
-            double step = 0;
+            const double min_distance = 0.005;
+            std::size_t steps = fabs(floor(planner::distance(from, to) / min_distance));
+            steps = steps == 0 ? steps + 1 : steps;
+            const double r_step = 1.0 / steps;
             bool result = true;
-            while (step <= 1) {
-                T temp_state = planner::interpolate(from, to, step);
+            double percent{r_step};
+            while (percent <= 1) {
+                T temp_state = planner::interpolate(from, to, percent);
                 result &= isStateValid(temp_state);
-                step += 0.25;
+                percent += r_step;
             }
             return result;
         }

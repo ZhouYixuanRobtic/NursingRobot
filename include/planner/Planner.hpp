@@ -197,7 +197,10 @@ namespace planner {
 
         }
 
-        const Vertex<T> *parent() const
+        const Vertex<T>* parent() const
+        { return _parent; };
+
+        Vertex<T>* &parent()
         { return _parent; };
 
         int depth() const
@@ -216,12 +219,19 @@ namespace planner {
 
         double *data() const
         { return const_cast<double *>(_vec.data()); };
+
+        std::list<Vertex<T> *> & children()
+        {
+            return _children;
+        }
     private:
         std::vector<double> _vec;
         T _state;
         Vertex *_parent;
         std::list<Vertex<T> *> _children;
     };
+
+
 }
 
 

@@ -81,15 +81,14 @@ target_link_libraries(Kinematics StateSpace ${YAML_LIBRARIES} ${GLOG_LIBRARIES})
 add_library(RRT include/planner/RRT.hpp)
 target_link_libraries(RRT StateSpace Kinematics)
 
-add_library(PlanningInterface src/planner/PlanningInterface.cpp)
-target_link_libraries(PlanningInterface StateSpace Kinematics)
-
-
 add_library(collision_helper src/collision_detection/MoveItCollisionHelperImpl.cpp)
 target_link_libraries(collision_helper Kinematics StateSpace ${catkin_LIBRARIES})
 
 add_library(cartesianPlanner src/planner/CartesianPlanner.cpp)
 target_link_libraries(cartesianPlanner Kinematics collision_helper StateSpace)
+
+add_library(PlanningInterface src/planner/PlanningInterface.cpp)
+target_link_libraries(PlanningInterface collision_helper cartesianPlanner)
 
 #executale
 add_executable(NursingRobot src/main.cpp)
@@ -106,3 +105,6 @@ target_link_libraries(cTest ${catkin_LIBRARIES} collision_helper  )
 
 catkin_add_gtest(carTest test/cartesian_test.cpp)
 target_link_libraries(carTest ${catkin_LIBRARIES} cartesianPlanner)
+
+catkin_add_gtest(planning_interface_test test/planning_interface_test.cpp)
+target_link_libraries(planning_interface_test ${catkin_LIBRARIES} PlanningInterface)

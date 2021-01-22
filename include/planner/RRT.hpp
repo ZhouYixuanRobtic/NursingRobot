@@ -1,7 +1,3 @@
-//
-// Created by xcy on 2020/12/15.
-//
-
 #ifndef NURSINGROBOT_RRT_HPP
 #define NURSINGROBOT_RRT_HPP
 
@@ -9,39 +5,29 @@
 #include <random>
 
 namespace planner {
-    enum PLANNER_TYPE{
+    enum PLANNER_TYPE {
         RRT_SIMPLE,
         RRT_CONNECT,
+        LAZY_RRT,
         RRT_STAR,
-        INFORMED_RRT
+        INFORMED_RRT_STAR
     };
 
     template<typename T>
     class RRT;
-    template<typename T>
-    std::shared_ptr<RRT<T>> createPlanner(const PLANNER_TYPE & planner_type,std::size_t dimensions = 6)
-    {
-        switch (planner_type) {
-            case RRT_SIMPLE:
-                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
-            case RRT_CONNECT:
-                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
-            case RRT_STAR:
-                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
-            case INFORMED_RRT:
-                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
-            default:
-                return std::shared_ptr<RRT<T>>(new RRT<T>(planner::hash<T>, dimensions));
-        }
-    }
 
     template<typename T>
     struct PLAN_REQUEST {
     public:
-        PLAN_REQUEST(const T &start, const T &goal, double time_limit = 5)
+        PLAN_REQUEST(const T &start, const T &goal, double time_limit = 5,
+                     double step_len = 0.05, bool is_step_relative=false, double max_goal_dist =0.05)
                 : _start(start),
                   _goal(goal),
-                  _time_limit(time_limit)
+                  _time_limit(time_limit),
+                  _step_len(step_len),
+                  _is_step_relative(is_step_relative),
+                  _max_goal_dist(max_goal_dist)
+
         {
 
         };
@@ -51,18 +37,23 @@ namespace planner {
         T _start;
         T _goal;
         double _time_limit;
+        double _step_len;
+        double _max_goal_dist;
+        bool _is_step_relative;
     };
 
     template<typename T>
     class RRT {
     protected:
-        std::deque<Vertex<T>>
-                _nodes;
+        std::deque<Vertex < T>>
+        _nodes;
 
-        std::unordered_map<T, Vertex<T> *, std::function<size_t(T)>>
-                _node_map;
+        std::unordered_map<T, Vertex < T> *, std::function<size_t(T)>>
+        _node_map;
 
-        Vertex<T> *_tail;
+        std::unordered_map<Vertex<T> *, std::size_t> _kd_tree_hash_map;
+
+        Vertex <T> *_tail;
         T _start, _goal;
 
         bool _forward;
@@ -72,6 +63,8 @@ namespace planner {
         std::size_t _iter_max{};
 
         double _step_len{}, _max_step_len{};
+
+        bool _is_step_relative{false};
 
         double _goal_bias{};
 
@@ -93,7 +86,7 @@ namespace planner {
 
         std::function<bool(const T &, const T &)> _state_validate_func;
 
-        virtual Vertex<T> *_nearest(const T &current_state, double *distance_out)
+        virtual Vertex <T> *_nearest(const T &current_state, double *distance_out)
         {
             //K-NN search
             std::vector<double> data(_dimensions);
@@ -119,7 +112,7 @@ namespace planner {
             return _node_map[point];
         }
 
-        virtual Vertex<T> *_steer(const T &rand_state, Vertex<T> *source)
+        virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source,bool check_collision)
         {
             double distance = _step_len;
             if (!source) {
@@ -127,32 +120,22 @@ namespace planner {
                 if (!source) return nullptr;
             }
             double steer_length =
-                    _step_len < 1 ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
-                                                                                                     this->StepLen());
+                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
+                                                                                                         this->StepLen());
             T intermediate_state = planner::extend(source->state(), rand_state, steer_length);
-            T from = _forward ? source->state() : intermediate_state,
-                    to = _forward ? intermediate_state : source->state();
-            if (!_isStateValid(from, to)) return nullptr;
+            T from = _forward ? source->state() : intermediate_state;
+            T to = _forward ? intermediate_state : source->state();
+            if (!_isStateValid(from, to,check_collision)) return nullptr;
 
             _nodes.template emplace_back(intermediate_state, source, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
+            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),_kd_tree_hash_map.size()));
             _node_map.insert(std::pair<T, Vertex<T> *>(intermediate_state, &_nodes.back()));
             return &_nodes.back();
         }
 
-        bool _isGoalReached(Vertex<T> *node_end)
+        bool _isGoalReached(Vertex <T> *node_end)
         {
-            if (_step_len > 1 && _goal_max_dist < 1) {
-                throw std::invalid_argument(
-                        "take a absolute step len, while having relative goal region radius"
-                        "Please call setGoalMaxDist()/setStepLen() to match them "
-                );
-            } else if (_step_len < 1 && _goal_max_dist > 1) {
-                throw std::invalid_argument(
-                        "take a relative step len, while having absolute goal region radius."
-                        "Please call setGoalMaxDist()/setStepLen() to match them"
-                );
-            }
             return planner::distance(node_end->state(), _goal) < _goal_max_dist;
         };
 
@@ -162,34 +145,52 @@ namespace planner {
             return *sample_ptr.get();
         }
 
-        virtual bool _isStateValid(const T &from, const T &to)
+        virtual bool _isStateValid(const T &from, const T &to, bool check_collision)
         {
-            if (_state_validate_func)
+            if (_state_validate_func && check_collision)
                 return _state_validate_func(from, to);
             else
                 return true;
         };
-
+        void _extract_path(std::vector<Vertex<T> *> &vertex_vector)
+        {
+            vertex_vector.clear();
+            Vertex<T> *vertex = _tail;
+            while(vertex)
+            {
+                vertex_vector.template emplace_back(vertex);
+                vertex = vertex->parent();
+            }
+        }
         virtual void _extract_path(std::vector<T> &vectorOut, bool reverse)
         {
-            const Vertex<T> *vertex = _tail;
+            vectorOut.clear();
+            std::vector<Vertex<T> *> vertex_vector;
+            _extract_path(vertex_vector);
             if (reverse) {
-                while (vertex) {
-                    vectorOut.template emplace_back(vertex->state());
-                    vertex = vertex->parent();
+                for (auto itr = vertex_vector.begin(); itr != vertex_vector.end(); itr++) {
+                    vectorOut.template emplace_back((*itr)->state());
                 }
             } else {
-                std::vector<const Vertex<T> *> vertexes;
-                while (vertex) {
-                    vertexes.template emplace_back(vertex);
-                    vertex = vertex->parent();
-                }
-                for (auto itr = vertexes.rbegin(); itr != vertexes.rend(); itr++) {
+                for (auto itr = vertex_vector.rbegin(); itr != vertex_vector.rend(); itr++) {
                     vectorOut.template emplace_back((*itr)->state());
                 }
             }
         }
 
+        virtual bool argsCheck()
+        {
+            if (_is_step_relative && (_step_len > 1 || _step_len < 0)) {
+                LOG(WARNING)
+                        << "receive relative step request while have step len or max step len not match the range of [0,1]";
+                return false;
+            }
+            if (_goal_bias < 0 || _goal_bias > 1) {
+                LOG(WARNING) << "The goal bias must be a number between 0.0 and 1.0";
+                return false;
+            }
+            return true;
+        }
 
     public:
 
@@ -213,7 +214,7 @@ namespace planner {
 
             setStepLen(0.1);
             setMaxStepLen(5);
-            setMaxIterations(10000);
+            setMaxIterations(100000);
             setGoalBias(0.1);
             setGoalMaxDist(_step_len);
         };
@@ -232,18 +233,20 @@ namespace planner {
 
         void setGoalBias(double goalBias)
         {
-            if (goalBias < 0 || goalBias > 1) {
-                throw std::invalid_argument(
-                        "The goal bias must be a number between 0.0 and 1.0");
-            }
             _goal_bias = goalBias;
         };
 
         double StepLen() const
         { return _step_len; }
-        //TODO:: absolute & relative step len should be distinguishable
-        void setStepLen(double stepSize)
-        { _step_len = stepSize; }
+
+        void setStepLen(double stepSize, bool isRelative = false)
+        {
+            _step_len = stepSize;
+            _is_step_relative = isRelative;
+        }
+
+        bool isStepRelative() const
+        { return _is_step_relative; }
 
         double MaxStepLen() const
         { return _max_step_len; }
@@ -268,7 +271,7 @@ namespace planner {
             _state_validate_func = state_validate_func;
         }
 
-        const Vertex<T> *RootVertex() const
+        const Vertex <T> *RootVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
@@ -276,14 +279,14 @@ namespace planner {
         }
 
 
-        const Vertex<T> *LastVertex() const
+        const Vertex <T> *LastVertex() const
         {
             if (_nodes.empty()) return nullptr;
 
             return &_nodes.back();
         }
 
-        const T &GoalState() const
+        T GoalState() const
         { return _goal; }
 
         void setGoalState(const T &goalState)
@@ -295,7 +298,7 @@ namespace planner {
         void setSampleBounds(const Eigen::MatrixX2d *bounds_ptr)
         { _bounds_ptr = bounds_ptr; }
 
-        const T &startState() const
+        T startState() const
         {
             if (_nodes.empty())
                 throw std::logic_error("No start state specified for RRT");
@@ -310,6 +313,7 @@ namespace planner {
             _nodes.template emplace_back(startState, nullptr, _dimensions, TToArray_);
             _node_map.insert(std::pair<T, Vertex<T> *>(startState, &_nodes.back()));
             _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
+            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),0));
             _start = startState;
         }
 
@@ -319,50 +323,64 @@ namespace planner {
             if (eraseRoot) {
                 _nodes.clear();
                 _node_map.clear();
+                _kd_tree_hash_map.clear();
             } else if (_nodes.size() > 1) {
                 //clear all node but left root
                 T root = RootVertex()->state();
                 _node_map.clear();
                 _nodes.clear();
+                _kd_tree_hash_map.clear();
                 _nodes.template emplace_back(root, nullptr, _dimensions, TToArray_);
                 _node_map.insert(std::pair<T, Vertex<T> *>(root, &_nodes.back()));
                 _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
+                _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),0));
             }
         }
 
         void constructPlan(const PLAN_REQUEST<T> &rrtRequest)
         {
-            setStartState(rrtRequest._start);
-            _goal = rrtRequest._goal;
-            _d_min = planner::distance(_start, _goal);
-            _time_limit = rrtRequest._time_limit;
+            if (_isStateValid(rrtRequest._start, rrtRequest._start,true) &&
+                _isStateValid(rrtRequest._goal, rrtRequest._goal,true)) {
+                setStartState(rrtRequest._start);
+                _step_len = rrtRequest._step_len;
+                _goal_max_dist = rrtRequest._max_goal_dist;
+                _is_step_relative = rrtRequest._is_step_relative;
+                _goal = rrtRequest._goal;
+                _d_min = planner::distance(_start, _goal);
+                _time_limit = rrtRequest._time_limit;
+            } else
+                LOG(INFO) << "Start or goal is not valid, please reset";
         }
 
         virtual bool planning()
         {
+            // validity check
+            if(!argsCheck())
+                return false;
             time_t start(clock());
             double time{};
-            for (int i = 0; i < MaxIterations(); ++i) {
-                time += (double) (clock() - start) / CLOCKS_PER_SEC;
+            for (int i = 0; i < _iter_max; ++i) {
+                time = (double) (clock() - start) / CLOCKS_PER_SEC;
                 if (time >= _time_limit) {
                     LOG(ERROR) << "No path find within " << _time_limit << " seconds"
                                << " now iterates " << i << "times";
                     return false;
                 }
                 Vertex<T> *new_vertex;
-                double r = rand() /
-                           (double) RAND_MAX;
-                if (r < GoalBias())
-                    new_vertex = _steer(GoalState(), nullptr);
+
+                double r = fabs(planner::randomState<state_space::Rn>(1, nullptr)[0]);
+
+                if (r < _goal_bias)
+                    new_vertex = _steer(_goal, nullptr,true);
                 else
-                    new_vertex = _steer(_sample(), nullptr);
+                    new_vertex = _steer(_sample(), nullptr,true);
                 if (new_vertex && _isGoalReached(new_vertex)) {
                     _tail = new_vertex;
                     return true;
                 }
 
             }
-            LOG(ERROR) << "No path find within " << MaxIterations() << " iterations";
+            LOG(ERROR) << "No path find within " << _iter_max << " iterations";
             return false;
         }
 
