@@ -55,7 +55,7 @@ TEST(collision_test, ik_with_collision_check_test)
             -3.05);
 
     size_t ik_with_one_collision_counter{}, ik_all_with_collision_counter{};
-    const size_t max_iterations = 1e6;
+    const size_t max_iterations = 1e5;
     double all_time = 0, one_time = 0;
 
     for (size_t index = 0; index < max_iterations; ++index) {

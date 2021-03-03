@@ -199,7 +199,7 @@ TEST(KinematicsTest, CombinedIKTest)
                         << "Coverage rate of exactly the same combined IK solution with right reference doesn't reach 3 sigma level, but"
                         << ik_combined_exactly_the_same_counter << "/" << max_iterations;
 
-    LOG(INFO) << "the average time consumption of numerical ik method: " << 1e6 * all_time / max_iterations
+    LOG(INFO) << "the average time consumption of combined ik method: " << 1e6 * all_time / max_iterations
               << "us\n";
 }
 
@@ -263,7 +263,7 @@ TEST(KinematicsTest, NearestIKTest)
                         << "Coverage rate of exactly the same nearest IK solution with right reference doesn't reach 3 sigma level, but"
                         << ik_nearest_exactly_the_same_counter << "/" << ik_nearest_with_right_reference;
 
-    LOG(INFO) << "the average time consumption of numerical ik method: " << 1e6 * all_time / max_iterations
+    LOG(INFO) << "the average time consumption of nearest ik method: " << 1e6 * all_time / max_iterations
               << "us\n";
 }
 int main(int argc, char **argv)

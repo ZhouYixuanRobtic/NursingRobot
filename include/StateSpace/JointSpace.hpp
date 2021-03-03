@@ -7,23 +7,24 @@
 
 #include <iostream>
 #include "StateSpace/StateSpace.hpp"
-
+#include "StateSpace/JointTangent.hpp"
 namespace state_space {
-
     DONT_ALIGN_CLASS_STL_FORWARD(JointSpace)
 
     class JointSpace : private virtual StateSpace<JointSpace> {
     protected:
         unsigned int _dimensions_;
         Eigen::VectorXd _data_;
+
         //make all elements in -pi,pi
-        void _restrict(double &val)
+        static void _restrict(double &val)
         {
-            if (val > M_PI)
+            while (val > M_PI)
                 val -= 2 * M_PI;
-            else if (val < -M_PI)
+            while(val < -M_PI)
                 val += 2 * M_PI;
         }
+
         void _restrict()
         {
             for (int i = 0; i < _data_.size(); ++i) {
@@ -85,12 +86,22 @@ namespace state_space {
         {
             return JointSpace(this->Vector() + input.Vector());
         };
-
+        JointSpace operator+(const JointTangent &input) const
+        {
+            return JointSpace(this->Vector() + input.Vector());
+        };
         JointSpace operator-(const JointSpace &input) const override
         {
             return JointSpace(this->Vector() - input.Vector());
         };
-
+        JointTangent operator-(const Eigen::VectorXd & from) const
+        {
+            return JointTangent(this->Vector() - from,false);
+        }
+        JointSpace operator-(const JointTangent& input) const
+        {
+            return JointSpace(this->Vector()-input.Vector());
+        }
         JointSpace operator*(double s) const override
         {
             return JointSpace(s * this->Vector());
@@ -165,15 +176,6 @@ namespace state_space {
             return this->distance(JointSpace(input));
         };
 
-        double distance(const JointSpace &from,const JointSpace &to, const Eigen::Vector2d & limits)
-        {
-            //
-            double limit_minimum_dist = limits[1]-limits[0];
-            _restrict(limit_minimum_dist);
-            limit_minimum_dist = fabs(limit_minimum_dist);
-            double limit_max_dist = 2*M_PI - limit_minimum_dist;
-
-        }
         double norm() const override
         {
             return this->_data_.norm();

@@ -80,6 +80,16 @@ namespace planner {
         }
         return source + (target - source) * lambda;
     }
+    template<>
+    state_space::JointSpace interpolate(const state_space::JointSpace &source, const state_space::JointSpace &target,
+                                        double lambda)
+    {
+        if (lambda > 1 || lambda < 0) {
+            throw std::invalid_argument
+                    ("only interpolate state with [source, target], please use 'extend' function \n");
+        }
+        return source + (target - source.Vector()) * lambda;
+    }
 
     /**
      * Gets a state in the direction of @source to @target, with a distance from @source
@@ -94,6 +104,13 @@ namespace planner {
         return source + (extend_direction * extend_length);
     }
 
+    template<>
+     state_space::JointSpace extend(const state_space::JointSpace &source, const state_space::JointSpace &target, double extend_length)
+    {
+        state_space::JointTangent extend_direction = target-source.Vector();
+        extend_direction = extend_direction * (1 / extend_direction.norm());
+        return source + (extend_direction * extend_length);
+    }
     /**
      * An overloaded version designed for bezier interpolation
      *
@@ -110,6 +127,19 @@ namespace planner {
     {
         T delta = target - source;
         T result;
+        result = source * (1 * pow(lambda, 0) * pow((1 - lambda), 5 - 0)) +
+                 (source - delta * 2) * (5 * pow(lambda, 1) * pow((1 - lambda), 5 - 1)) +
+                 (source - delta) * (10 * pow(lambda, 2) * pow((1 - lambda), 5 - 2)) +
+                 (source + delta * 3) * (10 * pow(lambda, 3) * pow((1 - lambda), 5 - 3)) +
+                 (source + delta * 2) * (5 * pow(lambda, 4) * pow((1 - lambda), 5 - 4)) +
+                 target * (1 * pow(lambda, 5) * pow((1 - lambda), 5 - 5));
+        return result;
+    }
+    template<>
+    state_space::JointSpace bezierInterpolate(const state_space::JointSpace &source, const state_space::JointSpace &target, double lambda)
+    {
+        state_space::JointTangent delta = target - source.Vector();
+        state_space::JointSpace result;
         result = source * (1 * pow(lambda, 0) * pow((1 - lambda), 5 - 0)) +
                  (source - delta * 2) * (5 * pow(lambda, 1) * pow((1 - lambda), 5 - 1)) +
                  (source - delta) * (10 * pow(lambda, 2) * pow((1 - lambda), 5 - 2)) +
@@ -153,6 +183,12 @@ namespace planner {
     {
         return from.distance(to);
     }
+    template<>
+    double distance(const state_space::JointSpace &from, const state_space::JointSpace &to)
+    {
+        return (from-to.Vector()).norm();
+    }
+
 
     /**
      * @brief Calculate the control points smoothing the give states contained in @state_list

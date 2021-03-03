@@ -119,7 +119,6 @@ namespace planner {
                 source = _nearest(rand_state, &distance);
                 if (!source) return nullptr;
             }
-            if(distance > )
             double steer_length =
                     _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
                                                                                                          this->StepLen());

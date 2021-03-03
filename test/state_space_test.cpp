@@ -23,15 +23,23 @@ TEST(state_space_test,joint_space_test)
 {
     double max_extent = getMaxExtent<state_space::JointSpace>();
     EXPECT_GT(max_extent,0);
-    LOG(INFO)<<"max extent of Jointspace free"<< planner::distance(state_space::JointSpace(std::vector<double>{3.05,3.05,3.05,3.05,3.05,3.05}),
+    LOG(INFO)<<"max extent of Jointspace free is "<< planner::distance(state_space::JointSpace(std::vector<double>{3.05,3.05,3.05,3.05,3.05,3.05}),
                                                                    state_space::JointSpace(std::vector<double>{-3.05,-3.05,-3.05,-3.05,-3.05,-3.05}))<<std::endl;
+    //Joint Space operator += test
+    state_space::JointSpace a(std::vector<double>{-1});
+    state_space::JointSpace b(std::vector<double>{-2});
+
+    LOG(INFO)<<"distance of "<<a<<" to "<< b<<"is"<<planner::distance(a,b);
+
+    LOG(INFO)<<"interpolate from "<<a<<" to "<< b<<" by 0.2 is "<<planner::interpolate(a,b,0.2);
+    LOG(INFO)<<"extend from "<<a<<" to "<< b<<" by 1 is "<<planner::extend(a,b,-1);
 }
+
 
 int main(int argc, char **argv)
 {
     logger lg(argv[0]);
     testing::InitGoogleTest(&argc, argv);
-    ros::init(argc, argv, "RRTTest");
     return RUN_ALL_TESTS();
 }
 
