@@ -6,7 +6,6 @@ namespace planner{
     template<typename T>
     class RRTConnect: public RRT<T>{
     protected:
-        
 
     public:
         RRTConnect(const RRTConnect<T> &) = delete;

@@ -6,6 +6,7 @@ namespace planner{
     template<typename T>
     class RRTStar : public RRT<T>{
     protected:
+        double search_radius_;
 
     public:
         RRTStar(const RRTStar<T> &) = delete;

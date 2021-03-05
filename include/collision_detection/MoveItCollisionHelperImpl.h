@@ -99,9 +99,8 @@ namespace my_collision_detection {
 
         bool isStateValid(const state_space::SE3 &state) const;
 
-        template<typename T>
-        bool isPathValid(const T &from,
-                         const T &to) const
+        bool isPathValid(const state_space::SE3 &from,
+                         const state_space::SE3 &to) const
         {
             const double min_distance = 0.005;
             std::size_t steps = fabs(floor(planner::distance(from, to) / min_distance));
@@ -109,8 +108,25 @@ namespace my_collision_detection {
             const double r_step = 1.0 / steps;
             bool result = true;
             double percent{r_step};
+            while (percent < 1) {
+                state_space::SE3 temp_state = planner::interpolate(from, to, percent);
+                result &= isStateValid(temp_state);
+                percent += r_step;
+            }
+            return result;
+        }
+
+        bool isPathValid(const state_space::JointSpace &from,
+                         const state_space::JointSpace &to) const
+        {
+            const double min_distance = 0.005;
+            std::size_t steps = floor(((from-to.Vector()).Vector() / min_distance).cwiseAbs().maxCoeff());
+            steps = steps == 0 ? steps + 1 : steps;
+            const double r_step = 1.0 / steps;
+            bool result = true;
+            double percent{r_step};
             while (percent <= 1) {
-                T temp_state = planner::interpolate(from, to, percent);
+                state_space::JointSpace temp_state = planner::interpolate(from, to, percent);
                 result &= isStateValid(temp_state);
                 percent += r_step;
             }

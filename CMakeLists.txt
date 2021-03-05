@@ -14,7 +14,7 @@ set(MKL_INCLUDE_DIRS "/opt/intel/oneapi/mkl/latest/include")
 set(MKL_LIB_DIRS "/opt/intel/oneapi/mkl/latest/lib/intel64")
 
 find_package(Eigen3 REQUIRED)
-
+find_package(OpenCV REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
         geometry_msgs roscpp rospy std_msgs
@@ -56,6 +56,7 @@ include_directories(
         ${FCL_INCLUDE_DIRS}
         ${GLOG_INCLUDE_DIRS}
         ${MKL_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIRS}
 )
 link_directories(
         /user/local/lib
@@ -95,7 +96,7 @@ add_executable(NursingRobot src/main.cpp)
 target_link_libraries(NursingRobot ${GLOG_LIBRARIES} ${catkin_LIBRARIES} collision_helper cartesianPlanner)
 
 catkin_add_gtest(6dTest test/rrt_test.cpp)
-target_link_libraries(6dTest StateSpace RRT ${catkin_LIBRARIES} collision_helper)
+target_link_libraries(6dTest StateSpace RRT ${catkin_LIBRARIES} collision_helper ${OpenCV_LIBS})
 
 catkin_add_gtest(kTest test/kinematics_test.cpp)
 target_link_libraries(kTest ${catkin_LIBRARIES} collision_helper)

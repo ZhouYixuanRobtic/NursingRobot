@@ -36,7 +36,7 @@ namespace my_collision_detection {
         template<typename T>
         bool isPathValid(const T &from,
                          const T &to) const
-        { return _moveit_collision_helper_impl_ptr->template isPathValid(from, to); }
+        { return _moveit_collision_helper_impl_ptr->isPathValid(from, to); }
 
         const my_kinematics::KinematicsPtr &getKinematicsPtr() const
         { return _moveit_collision_helper_impl_ptr->getKinematicsPtr(); }

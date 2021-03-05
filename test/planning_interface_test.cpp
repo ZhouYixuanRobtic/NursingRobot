@@ -18,14 +18,21 @@ TEST(planning_interface_test,compute_joint_path_test)
         //auto goal_valid = planningInterface.getRandomValidJointState();
         auto goal_valid = state_space::JointSpace(std::vector<double>{-1.438079781134842,-2.4659506418562516,-0.79238488741972768,2.8083971615457237,-0.20534463596476682,-0.22776415840239927});
         state_space::vector_JointSpace path;
-        auto plan_request = planner::PLAN_REQUEST<state_space::JointSpace>(planningInterface.getMoveItCollisionHelperPtr()->getCurrentJointAngles(),
+        auto plan_request = planner::PLAN_REQUEST<state_space::JointSpace>(state_space::JointSpace(std::vector<double>{0,0,0,0,0,0}),
                                                                   goal_valid,
-                                                                  300,
-                                                                  1);
+                                                                  3000,
+                                                                  0.05);
         clock_t start(clock());
         bool found_path = planningInterface.computeJointPath(path,plan_request);
         time += clock()-start;
         ASSERT_TRUE(found_path)<<"No path found at "<<iter_index<<"th try"<<goal_valid;
+        if(found_path)
+        {
+            for(const auto & it : path)
+            {
+                std::cout<<it<<std::endl;
+            }
+        }
     }
     LOG(INFO)<<" average time consumption is "<< (double)time/max_iterations/CLOCKS_PER_SEC<<" s";
     spinner.stop();

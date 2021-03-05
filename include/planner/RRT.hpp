@@ -20,14 +20,13 @@ namespace planner {
     struct PLAN_REQUEST {
     public:
         PLAN_REQUEST(const T &start, const T &goal, double time_limit = 5,
-                     double step_len = 0.05, bool is_step_relative=false, double max_goal_dist =0.05)
+                     double step_len = 0.05, bool is_step_relative = false, double max_goal_dist = 0.05)
                 : _start(start),
                   _goal(goal),
                   _time_limit(time_limit),
                   _step_len(step_len),
                   _is_step_relative(is_step_relative),
                   _max_goal_dist(max_goal_dist)
-
         {
 
         };
@@ -51,7 +50,8 @@ namespace planner {
         std::unordered_map<T, Vertex < T> *, std::function<size_t(T)>>
         _node_map;
 
-        std::unordered_map<Vertex<T> *, std::size_t> _kd_tree_hash_map;
+        std::unordered_map<Vertex < T> *, std::size_t>
+        _kd_tree_hash_map;
 
         Vertex <T> *_tail;
         T _start, _goal;
@@ -78,6 +78,8 @@ namespace planner {
 
         const Eigen::MatrixX2d *_bounds_ptr;
 
+        Eigen::MatrixX2d bounds;
+
         std::shared_ptr<flann::Index<flann::L2_Simple<double>>> _kd_tree{};
 
         std::function<T(double *)> _arrayToT;
@@ -92,7 +94,7 @@ namespace planner {
             std::vector<double> data(_dimensions);
             flann::Matrix<double> query;
             if (NULL == TToArray_) {
-                memcpy(data.data(), current_state.data(), _dimensions * sizeof(current_state.Vector()[0]));
+                memcpy(data.data(), current_state.data(), _dimensions * sizeof(double));
                 query = flann::Matrix<double>(data.data(), 1, _dimensions);
             } else {
                 TToArray_(current_state, data.data());
@@ -112,37 +114,46 @@ namespace planner {
             return _node_map[point];
         }
 
-        virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source,bool check_collision)
+        virtual Vertex <T> *_steer(const T &rand_state, Vertex <T> *source, bool check_collision)
         {
             double distance{};
             if (!source) {
                 source = _nearest(rand_state, &distance);
                 if (!source) return nullptr;
             }
+            //max distance
             double steer_length =
-                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
-                                                                                                         this->StepLen());
-            T intermediate_state = planner::extend(source->state(), rand_state, steer_length);
+                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,this->StepLen());
+            Eigen::VectorXd extend_length = (rand_state-source->state().Vector()).Vector().cwiseAbs();
+            for(int i=0; i<extend_length.size(); ++i)
+                extend_length[i] = std::min(extend_length[i],_step_len) == 0 ? _step_len : std::min(extend_length[i],_step_len);
+            //consider a non-relative step 0.05
+            T intermediate_state = planner::extend(source->state(), rand_state, extend_length);
             T from = _forward ? source->state() : intermediate_state;
             T to = _forward ? intermediate_state : source->state();
-            if (!_isStateValid(from, to,check_collision)) return nullptr;
+            if (!_isStateValid(from, to, check_collision)) return nullptr;
 
             _nodes.template emplace_back(intermediate_state, source, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
-            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),_kd_tree_hash_map.size()));
+            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(), _kd_tree_hash_map.size()));
             _node_map.insert(std::pair<T, Vertex<T> *>(intermediate_state, &_nodes.back()));
             return &_nodes.back();
         }
 
         bool _isGoalReached(Vertex <T> *node_end)
         {
-            return planner::distance(node_end->state(), _goal) < _goal_max_dist;
+            return _is_step_relative ? planner::distance(node_end->state(), _goal) / _d_min < _goal_max_dist :
+                   planner::distance(node_end->state(), _goal) < _goal_max_dist;
         };
 
         virtual T _sample()
         {
-            std::shared_ptr<T> sample_ptr(std::make_shared<T>(randomState<T>(_dimensions, _bounds_ptr)));
-            return *sample_ptr.get();
+            //sample a valid state
+            auto rand_state = randomState<T>(_dimensions, _bounds_ptr);
+            while (!_isStateValid(rand_state, rand_state, true))
+                rand_state = randomState<T>(_dimensions, _bounds_ptr);
+
+            return rand_state;
         }
 
         virtual bool _isStateValid(const T &from, const T &to, bool check_collision)
@@ -152,16 +163,19 @@ namespace planner {
             else
                 return true;
         };
-        void _extract_path(std::vector<Vertex<T> *> &vertex_vector)
+
+        void _extract_path(std::vector<Vertex < T> *
+
+        > &vertex_vector)
         {
             vertex_vector.clear();
-            Vertex<T> *vertex = _tail;
-            while(vertex)
-            {
+            Vertex <T> *vertex = _tail;
+            while (vertex) {
                 vertex_vector.template emplace_back(vertex);
                 vertex = vertex->parent();
             }
         }
+
         virtual void _extract_path(std::vector<T> &vectorOut, bool reverse)
         {
             vectorOut.clear();
@@ -313,7 +327,7 @@ namespace planner {
             _nodes.template emplace_back(startState, nullptr, _dimensions, TToArray_);
             _node_map.insert(std::pair<T, Vertex<T> *>(startState, &_nodes.back()));
             _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
-            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),0));
+            _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(), 0));
             _start = startState;
         }
 
@@ -333,14 +347,14 @@ namespace planner {
                 _nodes.template emplace_back(root, nullptr, _dimensions, TToArray_);
                 _node_map.insert(std::pair<T, Vertex<T> *>(root, &_nodes.back()));
                 _kd_tree->buildIndex(flann::Matrix<double>(RootVertex()->data(), 1, _dimensions));
-                _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(),0));
+                _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(), 0));
             }
         }
 
         void constructPlan(const PLAN_REQUEST<T> &rrtRequest)
         {
-            if (_isStateValid(rrtRequest._start, rrtRequest._start,true) &&
-                _isStateValid(rrtRequest._goal, rrtRequest._goal,true)) {
+            if (_isStateValid(rrtRequest._start, rrtRequest._start, true) &&
+                _isStateValid(rrtRequest._goal, rrtRequest._goal, true)) {
                 setStartState(rrtRequest._start);
                 _step_len = rrtRequest._step_len;
                 _goal_max_dist = rrtRequest._max_goal_dist;
@@ -355,8 +369,14 @@ namespace planner {
         virtual bool planning()
         {
             // validity check
-            if(!argsCheck())
+            if (!argsCheck())
                 return false;
+            if ((!_is_step_relative && (_d_min *_dimensions <= _step_len * _step_len || _d_min <= _goal_max_dist))
+                || _is_step_relative && _d_min <= std::numeric_limits<double>::epsilon()) {
+                _nodes.template emplace_back(_goal, &_nodes.front(), _dimensions, TToArray_);
+                _tail = &_nodes.back();
+                return true;
+            }
             time_t start(clock());
             double time{};
             for (int i = 0; i < _iter_max; ++i) {
@@ -371,9 +391,9 @@ namespace planner {
                 double r = fabs(planner::randomState<state_space::Rn>(1, nullptr)[0]);
 
                 if (r < _goal_bias)
-                    new_vertex = _steer(_goal, nullptr,true);
+                    new_vertex = _steer(_goal, nullptr, true);
                 else
-                    new_vertex = _steer(_sample(), nullptr,true);
+                    new_vertex = _steer(_sample(), nullptr, true);
                 if (new_vertex && _isGoalReached(new_vertex)) {
                     _tail = new_vertex;
                     return true;
@@ -388,7 +408,6 @@ namespace planner {
         {
             std::vector<T> path;
             _extract_path(path, reverse);
-            path.template emplace_back(_goal);
             return path;
         }
 
