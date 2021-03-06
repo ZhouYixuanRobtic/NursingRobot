@@ -80,7 +80,7 @@ namespace planner {
 
         Eigen::MatrixX2d bounds;
 
-        std::shared_ptr<flann::Index<flann::L2_Simple<double>>> _kd_tree{};
+        std::shared_ptr<flann::Index<flann::L1<double>>> _kd_tree{};
 
         std::function<T(double *)> _arrayToT;
 
@@ -104,7 +104,7 @@ namespace planner {
             std::vector<std::vector<double>> dists(1);
             _kd_tree->knnSearch(query, indices, dists, 1, flann::SearchParams());
             if (distance_out)
-                *distance_out = std::sqrt(dists[0][0]);
+                *distance_out = dists[0][0];
             T point;
             if (NULL == _arrayToT) {
                 point = T(_kd_tree->getPoint(indices[0][0]), _dimensions);
@@ -123,16 +123,14 @@ namespace planner {
             }
             //max distance
             double steer_length =
-                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,this->StepLen());
-            Eigen::VectorXd extend_length = (rand_state-source->state().Vector()).Vector().cwiseAbs();
-            for(int i=0; i<extend_length.size(); ++i)
-                extend_length[i] = std::min(extend_length[i],_step_len) == 0 ? _step_len : std::min(extend_length[i],_step_len);
+                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
+                                                                                                         this->StepLen());
+
             //consider a non-relative step 0.05
-            T intermediate_state = planner::extend(source->state(), rand_state, extend_length);
+            T intermediate_state = planner::extend(source->state(), rand_state, steer_length);
             T from = _forward ? source->state() : intermediate_state;
             T to = _forward ? intermediate_state : source->state();
             if (!_isStateValid(from, to, check_collision)) return nullptr;
-
             _nodes.template emplace_back(intermediate_state, source, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
             _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(), _kd_tree_hash_map.size()));
@@ -142,8 +140,12 @@ namespace planner {
 
         bool _isGoalReached(Vertex <T> *node_end)
         {
-            return _is_step_relative ? planner::distance(node_end->state(), _goal) / _d_min < _goal_max_dist :
-                   planner::distance(node_end->state(), _goal) < _goal_max_dist;
+            bool near = _is_step_relative ? planner::distance(node_end->state(), _goal) / _d_min < _goal_max_dist :
+                        planner::distance(node_end->state(), _goal) < _goal_max_dist;
+
+            near = near ? near & _isStateValid(node_end->state(), _goal, true) : near;
+
+            return near;
         };
 
         virtual T _sample()
@@ -152,7 +154,6 @@ namespace planner {
             auto rand_state = randomState<T>(_dimensions, _bounds_ptr);
             while (!_isStateValid(rand_state, rand_state, true))
                 rand_state = randomState<T>(_dimensions, _bounds_ptr);
-
             return rand_state;
         }
 
@@ -164,9 +165,7 @@ namespace planner {
                 return true;
         };
 
-        void _extract_path(std::vector<Vertex < T> *
-
-        > &vertex_vector)
+        void _extract_path(std::vector<Vertex < T> *> &vertex_vector)
         {
             vertex_vector.clear();
             Vertex <T> *vertex = _tail;
@@ -221,7 +220,7 @@ namespace planner {
                   _d_min(0.1)
         {
             _bounds_ptr = nullptr;
-            _kd_tree = std::make_shared<flann::Index<flann::L2_Simple<double>>>(flann::KDTreeSingleIndexParams());
+            _kd_tree = std::make_shared<flann::Index<flann::L1<double>>>(flann::KDTreeSingleIndexParams());
             _forward = forward;
             _arrayToT = arrayToT;
             TToArray_ = TToArray;
@@ -333,7 +332,7 @@ namespace planner {
 
         void reset(bool eraseRoot = false)
         {
-            _kd_tree.reset(new flann::Index<flann::L2_Simple<double>>(flann::KDTreeSingleIndexParams()));
+            _kd_tree.reset(new flann::Index<flann::L1<double>>(flann::KDTreeSingleIndexParams()));
             if (eraseRoot) {
                 _nodes.clear();
                 _node_map.clear();
@@ -371,13 +370,14 @@ namespace planner {
             // validity check
             if (!argsCheck())
                 return false;
-            if ((!_is_step_relative && (_d_min *_dimensions <= _step_len * _step_len || _d_min <= _goal_max_dist))
+            //when start state is near goal, check is the path valid
+            if ((!_is_step_relative && _isGoalReached(&_nodes.front()))
                 || _is_step_relative && _d_min <= std::numeric_limits<double>::epsilon()) {
                 _nodes.template emplace_back(_goal, &_nodes.front(), _dimensions, TToArray_);
                 _tail = &_nodes.back();
                 return true;
             }
-            time_t start(clock());
+            time_t start{clock()};
             double time{};
             for (int i = 0; i < _iter_max; ++i) {
                 time = (double) (clock() - start) / CLOCKS_PER_SEC;
@@ -408,6 +408,7 @@ namespace planner {
         {
             std::vector<T> path;
             _extract_path(path, reverse);
+            path.template emplace_back(_goal);
             return path;
         }
 

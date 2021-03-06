@@ -175,8 +175,8 @@ TEST(RRTTest, R2WithAnimationTest)
     state_space::JointSpace from{std::vector<double>{0,0}};
     state_space::JointSpace to{std::vector<double>{0,1}};
 
-   // auto a = planner::extend(from,to,0.05);
-    //std::cout<<a<<std::endl;
+    auto a = planner::extend(from,to,0.05);
+    std::cout<<a<<std::endl;
     Eigen::MatrixX2d bounds;
     bounds.resize(2, 2);
     bounds << Eigen::Vector2d().setConstant(-1),

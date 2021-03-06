@@ -97,29 +97,21 @@ namespace planner {
      * @return A state
      */
     template<typename T>
-    static T extend(const T &source, const T &target, const Eigen::VectorXd & extend_length)
+    static T extend(const T &source, const T &target, double extend_length)
     {
         if(source == target)
             return target;
         T extend_direction = target - source;
         extend_direction = extend_direction * (1 / extend_direction.norm());
-        return source + (extend_direction * extend_length[0]);
+        return source + (extend_direction * extend_length);
     }
 
     template<>
-     state_space::JointSpace extend(const state_space::JointSpace &source, const state_space::JointSpace &target, const Eigen::VectorXd & extend_length)
+    state_space::JointSpace extend(const state_space::JointSpace &source, const state_space::JointSpace &target, double extend_length)
     {
-        if(source == target)
-            return target;
         state_space::JointTangent extend_direction = target-source.Vector();
-        Eigen::VectorXd steps = ((target-source.Vector()).Vector().array() / extend_length.array()).cwiseAbs().floor();
-        for(int i=0; i < steps.size(); ++i)
-        {
-            steps[i] = steps[i]==0 ? steps[i]+1 : steps[i];
-        }
-        steps = 1/steps.array();
-        Eigen::VectorXd final = extend_direction.Vector().cwiseProduct(steps);
-        return source + state_space::JointTangent(final);
+        extend_direction = extend_direction * (1 / extend_direction.Vector().cwiseAbs().sum());
+        return source + (extend_direction * extend_length);
     }
     /**
      * An overloaded version designed for bezier interpolation
@@ -196,7 +188,7 @@ namespace planner {
     template<>
     double distance(const state_space::JointSpace &from, const state_space::JointSpace &to)
     {
-        return (from-to.Vector()).norm();
+        return (from-to.Vector()).Vector().cwiseAbs().sum();
     }
 
 

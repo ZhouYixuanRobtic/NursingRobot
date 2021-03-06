@@ -17,11 +17,14 @@ TEST(planning_interface_test,compute_joint_path_test)
     while(++iter_index<=max_iterations){
         //auto goal_valid = planningInterface.getRandomValidJointState();
         auto goal_valid = state_space::JointSpace(std::vector<double>{-1.438079781134842,-2.4659506418562516,-0.79238488741972768,2.8083971615457237,-0.20534463596476682,-0.22776415840239927});
+        auto start_valid = state_space::JointSpace(std::vector<double>{0,0,0,0,0,0});
+        std::cout<<"the distance between start and goal is "<<planner::distance(goal_valid,start_valid)<<std::endl;
+
         state_space::vector_JointSpace path;
         auto plan_request = planner::PLAN_REQUEST<state_space::JointSpace>(state_space::JointSpace(std::vector<double>{0,0,0,0,0,0}),
                                                                   goal_valid,
-                                                                  3000,
-                                                                  0.05);
+                                                                  300,
+                                                                  1,false,0.5);
         clock_t start(clock());
         bool found_path = planningInterface.computeJointPath(path,plan_request);
         time += clock()-start;
