@@ -1,7 +1,6 @@
 #ifndef NURSINGROBOT_RRT_HPP
 #define NURSINGROBOT_RRT_HPP
-
-#include "planner/Planner.hpp"
+#include "planner/Tree.hpp"
 #include <random>
 
 namespace planner {
