@@ -136,7 +136,7 @@ TEST(RRTTest, SE3withCollisionTest)
 
 TEST(RRTTest, R2WithAnimationTest)
 {
-    /*
+
     cv::Mat img = cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/newmap.png", cv::COLOR_BGR2GRAY);
     Eigen::MatrixX2d bounds;
     bounds.resize(2, 2);
@@ -145,18 +145,18 @@ TEST(RRTTest, R2WithAnimationTest)
     //auto start_state = planner::randomState<state_space::Rn>(2,&bounds);
     //auto goal_state = planner::randomState<state_space::Rn>(2,&bounds);
     state_space::Rn start_state{std::vector<double>{1,1}};
-    state_space::Rn goal_state{std::vector<double>{1,1}};
+    state_space::Rn goal_state{std::vector<double>{770,440}};
 
     cv::circle(img, cv::Point(start_state.Vector()[0], start_state.Vector()[1]), 3, cv::Scalar{0, 0, 255}, 3);
     cv::circle(img, cv::Point(goal_state.Vector()[0], goal_state.Vector()[1]), 3, cv::Scalar{0, 0, 255}, 3);
 
-    auto rrt_based_planner_ptr = planner::createPlanner<state_space::Rn>(planner::RRT_SIMPLE,start_state.Dimensions());
+    auto rrt_based_planner_ptr = planner::createPlanner<state_space::Rn,flann::L2_Simple<double>>(planner::LAZY_RRT_CONNECT,start_state.Dimensions());
 
     rrt_based_planner_ptr->setStateValidator(std::function<bool(const state_space::Rn &, const state_space::Rn &)>(isPathValid_2d));
 
     rrt_based_planner_ptr->setSampleBounds(&bounds);
 
-    rrt_based_planner_ptr->constructPlan(planner::PLAN_REQUEST<state_space::Rn>(start_state, goal_state, 50,30,false,30));
+    rrt_based_planner_ptr->constructPlan(planner::PLAN_REQUEST<state_space::Rn,flann::L2_Simple<double>>(start_state, goal_state, 500,30,false,30));
     std::vector<state_space::Rn> path;
     clock_t start(clock());
     if (rrt_based_planner_ptr->planning()) {
@@ -164,25 +164,16 @@ TEST(RRTTest, R2WithAnimationTest)
         LOG(INFO) << "planning time consumption: " << static_cast<double>(end - start) / CLOCKS_PER_SEC;
         path = rrt_based_planner_ptr->GetPath();
         for (std::size_t i = 1; i < path.size(); ++i) {
+            std::cout<<path[i-1]<<std::endl;
             cv::circle(img, cv::Point(path[i].Vector()[0], path[i].Vector()[1]), 3, cv::Scalar{255, 0, 0}, 1);
             cv::line(img, cv::Point(path[i].Vector()[0], path[i].Vector()[1]),
                      cv::Point(path[i - 1].Vector()[0], path[i - 1].Vector()[1]), cv::Scalar{255, 0, 0}, 2);
         }
+        std::cout<<path.back()<<std::endl;
         cv::imshow("result", img);
         cv::waitKey(0);
     }
-    EXPECT_TRUE(!path.empty()) << "No path found";*/
-    state_space::JointSpace from{std::vector<double>{0,0}};
-    state_space::JointSpace to{std::vector<double>{0,1}};
-
-    auto a = planner::extend(from,to,0.05);
-    std::cout<<a<<std::endl;
-    Eigen::MatrixX2d bounds;
-    bounds.resize(2, 2);
-    bounds << Eigen::Vector2d().setConstant(-1),
-            Eigen::Vector2d().setConstant(0);
-    auto b= planner::randomState<state_space::JointSpace>(2, &bounds);
-    std::cout<<b<<std::endl;
+    EXPECT_TRUE(!path.empty()) << "No path found";
 }
 
 int main(int argc, char **argv)

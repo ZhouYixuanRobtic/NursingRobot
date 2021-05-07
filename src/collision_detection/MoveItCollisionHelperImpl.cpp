@@ -24,7 +24,7 @@ namespace my_collision_detection {
         collision_detection::CollisionResult collision_result;
         current_state.setJointGroupPositions(_joint_model_group, state.Vector());
         _planning_scene_ptr->checkCollision(collision_request, collision_result, current_state);
-        return !collision_result.collision;
+        return !collision_result.collision && current_state.satisfiesBounds(_joint_model_group,1e-6);
     }
 
     bool MoveItCollisionHelperImpl::isStateValid(const state_space::SE3 &state) const

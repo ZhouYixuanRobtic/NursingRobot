@@ -4,7 +4,7 @@
 #include "collision_detection/MoveItCollisionHelper.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_eigen/tf2_eigen.h>
-
+/*
 TEST(collision_test, get_current_state_test)
 {
     const std::string PLANNING_GROUP = "manipulator_i5";
@@ -36,7 +36,7 @@ TEST(collision_test, get_current_state_test)
                             << "my current joints failed in " << namedTarget << " case";;
     }
     spinner.stop();
-}
+}*/
 
 TEST(collision_test, ik_with_collision_check_test)
 {
@@ -57,7 +57,10 @@ TEST(collision_test, ik_with_collision_check_test)
     size_t ik_with_one_collision_counter{}, ik_all_with_collision_counter{};
     const size_t max_iterations = 1e5;
     double all_time = 0, one_time = 0;
-
+    state_space::JointSpace from{std::vector<double>{-1.43808,-2.46595,-0.792385,2.8084,-0.205345,-0.227764}};
+    state_space::JointSpace to{std::vector<double>{-1.43707,-2.30642,-0.633016,2.78423,-0.0765306,-0.254872}};
+    std::cout<<moveItCollisionHelper.isPathValid(to,from)<<std::endl;
+    /*
     for (size_t index = 0; index < max_iterations; ++index) {
 
         //generate a collision-free state
@@ -68,7 +71,6 @@ TEST(collision_test, ik_with_collision_check_test)
             test_joint = planner::randomState<state_space::JointSpace>(6, &bounds_for_aubo);
             state_valid = moveItCollisionHelper.isStateValid(test_joint);
         }
-
         auto desired_pose = aubo_i5_kinematics->fk(test_joint);
         //check analytical ik without right reference (make \theta6 as 0)
         Eigen::MatrixXd joint_solutions;
@@ -93,7 +95,7 @@ TEST(collision_test, ik_with_collision_check_test)
             ik_all_with_collision_counter++;
         }
         one_time += double(end - start) / CLOCKS_PER_SEC;
-    }
+    }*/
     EXPECT_EQ(max_iterations,ik_with_one_collision_counter)<<"the state valid coverage rate of neaerest is not 100%, but"
                                                             <<ik_with_one_collision_counter<<" / "<<max_iterations;
 

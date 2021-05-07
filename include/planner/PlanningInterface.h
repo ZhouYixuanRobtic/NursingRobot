@@ -7,7 +7,7 @@
 namespace planner{
     class PlanningInterface{
     private:
-        std::shared_ptr<RRT<state_space::JointSpace>> _rrt_ptr;
+        std::shared_ptr<RRT<state_space::JointSpace,flann::L1<double>>> _rrt_ptr;
         my_collision_detection::MoveItCollisionHelperPtr _moveit_collision_helper_ptr;
         std::size_t _joint_nums;
     public:

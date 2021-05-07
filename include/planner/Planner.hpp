@@ -109,6 +109,8 @@ namespace planner {
     template<>
     state_space::JointSpace extend(const state_space::JointSpace &source, const state_space::JointSpace &target, double extend_length)
     {
+        if(source == target)
+            return target;
         state_space::JointTangent extend_direction = target-source.Vector();
         extend_direction = extend_direction * (1 / extend_direction.Vector().cwiseAbs().sum());
         return source + (extend_direction * extend_length);
@@ -211,7 +213,7 @@ namespace planner {
     class Vertex {
     public:
 
-        explicit Vertex(const T &data, Vertex<T> *parent = nullptr, int dimensions = 6,
+        explicit Vertex(const T &data, Vertex<T> * parent = nullptr, int dimensions = 6,
                         std::function<void(T, double *)> TToArray = NULL)
                 : _state(data), _parent(parent)
         {
@@ -235,11 +237,11 @@ namespace planner {
 
         }
 
-        const Vertex<T>* parent() const
+        Vertex<T>* parent() const
         { return _parent; };
 
         Vertex<T>* &parent()
-        { return _parent; };
+        {return _parent;}
 
         int depth() const
         {

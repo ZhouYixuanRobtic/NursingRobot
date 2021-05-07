@@ -2,54 +2,74 @@
 #define NURSINGROBOT_TREE_HPP
 
 #include "planner/Planner.hpp"
-namespace planner{
-    template<typename T, typename Distance = flann::L1<double>>
+
+namespace planner {
+    template<typename T, typename Distance>
     class Tree {
     protected:
-        std::deque<Vertex<T>> _nodes;
+        std::deque<Vertex < T>> _nodes;
 
-        std::unordered_map<T,Vertex<T>*, std::function<size_t(T)>> _node_map;
+        std::unordered_map<T, Vertex < T>*, std::function<size_t(T)>> _node_map;
 
-        std::unordered_map<Vertex<T> *, std::size_t> _kd_tree_hash_map;
+        std::unordered_map<Vertex < T> *, std::size_t>
+        _kd_tree_hash_map;
 
-        std::size_t  _dimensions;
+        std::size_t _dimensions;
 
         std::shared_ptr<flann::Index<Distance>> _kd_tree{};
 
         std::function<T(double *)> _arrayToT;
 
-        std::function<void(T,double *)> TToArray_;
+        std::function<void(T, double *)> TToArray_;
+
+        T _goal;
     public:
-        Tree(const Tree<T,Distance> &) = default;
-        Tree &operator=(const Tree<T,Distance> &) = default;
+        Tree(const Tree<T, Distance> &) = default;
+
+        Tree &operator=(const Tree<T, Distance> &) = default;
 
         Tree(std::function<size_t(T)> hashT, std::size_t dimensions,
              std::function<T(double *)> arrayToT = NULL,
              std::function<void(T, double *)> TToArray = NULL)
-             :_dimensions(dimensions),
-             _node_map(20,hashT),
-             _kd_tree(std::make_shared<flann::Index<Distance>>(flann::KDTreeSingleIndexParams())),
-             _arrayToT(arrayToT),
-             TToArray_(TToArray)
+                : _dimensions(dimensions),
+                  _node_map(20, hashT),
+                  _kd_tree(std::make_shared<flann::Index<Distance>>(flann::KDTreeSingleIndexParams())),
+                  _arrayToT(arrayToT),
+                  TToArray_(TToArray)
         {
 
         };
+
         virtual ~Tree() = default;
 
         //return the root of the tree
-        Vertex <T> *RootVertex() const
+        Vertex <T> *RootVertex()
         {
             if (_nodes.empty()) return nullptr;
 
             return &_nodes.front();
         }
-        Vertex <T> *LastVertex() const
+
+        Vertex <T> *LastVertex()
         {
             if (_nodes.empty()) return nullptr;
 
             return &_nodes.back();
         }
 
+        void setGoalState(const T & goalState)
+        {
+            _goal = goalState;
+        }
+
+        T Goal()
+        {
+            return _goal;
+        }
+        std::size_t TreeSize() const
+        {
+            return _node_map.size();
+        }
         void reset(bool eraseRoot = false)
         {
             _kd_tree.reset(new flann::Index<Distance>(flann::KDTreeSingleIndexParams()));
@@ -107,7 +127,7 @@ namespace planner{
         }
 
 
-        virtual void addState(const T& state, Vertex<T> *  parent)
+        virtual void addState(const T &state, Vertex <T> * parent)
         {
             _nodes.template emplace_back(state, parent, _dimensions, TToArray_);
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
@@ -115,7 +135,21 @@ namespace planner{
             _node_map.insert(std::pair<T, Vertex<T> *>(state, &_nodes.back()));
         }
 
-        void _extract_path(std::vector<Vertex < T> *> &vertex_vector, const Vertex<T> * tail)
+        virtual void removeState(Vertex<T>* vertex)
+        {
+            try {
+                std::size_t point_id = _kd_tree_hash_map.at(vertex);
+                _kd_tree->removePoint(point_id);
+                _kd_tree_hash_map.erase(vertex);
+                _node_map.erase(vertex->state());
+            }
+            catch(const std::exception & e)
+            {
+                std::cout<<e.what()<<std::endl;
+            }
+
+        }
+        void _extract_path(std::vector<Vertex < T> *> &vertex_vector, Vertex <T> * tail)
         {
             vertex_vector.clear();
             Vertex <T> *vertex = tail;
@@ -125,11 +159,8 @@ namespace planner{
             }
         }
 
-        virtual void extract_path(std::vector<T> &vectorOut, const Vertex<T> * tail,bool reverse)
+        void _extract_path(std::vector<T> &vectorOut, const std::vector<Vertex<T>*> &vertex_vector,bool reverse)
         {
-            vectorOut.clear();
-            std::vector<Vertex<T> *> vertex_vector;
-            _extract_path(vertex_vector,);
             if (reverse) {
                 for (auto itr = vertex_vector.begin(); itr != vertex_vector.end(); itr++) {
                     vectorOut.template emplace_back((*itr)->state());
@@ -140,12 +171,16 @@ namespace planner{
                 }
             }
         }
+
+        virtual void extract_path(std::vector<T> &vectorOut, Vertex <T> * tail, bool reverse)
+        {
+            vectorOut.clear();
+            std::vector<Vertex<T> *> vertex_vector;
+            _extract_path(vertex_vector,tail);
+            _extract_path(vectorOut,vertex_vector,reverse);
+        }
     };
 }
-
-
-
-
 
 
 #endif //NURSINGROBOT_TREE_HPP

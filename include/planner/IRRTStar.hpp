@@ -2,19 +2,19 @@
 #define NURSINGROBOT_IRRTSTAR_HPP
 #include "planner/RRTStar.hpp"
 namespace planner{
-    template<typename T>
-    class IRRTStar : public RRTStar<T>{
+    template<typename T,typename Distance>
+    class IRRTStar : public RRTStar<T,Distance>{
     protected:
 
     public:
-        IRRTStar(const IRRTStar<T> &) = delete;
+        IRRTStar(const IRRTStar<T,Distance> &) = delete;
 
-        IRRTStar &operator=(const IRRTStar<T> &) = delete;
+        IRRTStar &operator=(const IRRTStar<T,Distance> &) = delete;
 
         IRRTStar(std::function<size_t(T)> hashT, std::size_t dimensions, bool forward = true,
                 std::function<T(double *)> arrayToT = NULL,
                 std::function<void(T, double *)> TToArray = NULL)
-                : RRTStar<T>(hashT,dimensions,forward,arrayToT,TToArray)
+                : RRTStar<T,Distance>(hashT,dimensions,forward,arrayToT,TToArray)
         {
 
         };
@@ -40,7 +40,7 @@ namespace planner{
                     new_vertex = this->_steer(this->_goal, nullptr,false);
                 else
                     new_vertex = this->_steer(this->_sample(), nullptr,false);
-                if (new_vertex && this->_isGoalReached(new_vertex)) {
+                if (new_vertex && this->_isReached(new_vertex)) {
 
                 }
 

@@ -3,20 +3,20 @@
 #include "planner/RRT.hpp"
 
 namespace planner{
-    template<typename T>
-    class RRTStar : public RRT<T>{
+    template<typename T,typename Distance>
+    class RRTStar : public RRT<T,Distance>{
     protected:
         double search_radius_;
 
     public:
-        RRTStar(const RRTStar<T> &) = delete;
+        RRTStar(const RRTStar<T,Distance> &) = delete;
 
-        RRTStar &operator=(const RRTStar<T> &) = delete;
+        RRTStar &operator=(const RRTStar<T,Distance> &) = delete;
 
         RRTStar(std::function<size_t(T)> hashT, std::size_t dimensions, bool forward = true,
                   std::function<T(double *)> arrayToT = NULL,
                   std::function<void(T, double *)> TToArray = NULL)
-                : RRT<T>(hashT,dimensions,forward,arrayToT,TToArray)
+                : RRT<T,Distance>(hashT,dimensions,forward,arrayToT,TToArray)
         {
 
         };

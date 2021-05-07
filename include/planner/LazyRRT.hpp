@@ -3,14 +3,12 @@
 #include "planner/RRT.hpp"
 namespace planner{
 
-    template<typename T>
-    class LazyRRT : public RRT<T>{
+    template<typename T,typename Distance>
+    class LazyRRT : public RRT<T,Distance>{
     protected:
-        void _removeVertex(Vertex<T>* & state_vertex)
+        void _removeVertex(Vertex<T>* state_vertex)
         {
-            std::size_t point_id = this->_kd_tree_hash_map.at(this->_node_map.at(state_vertex->state()));
-            this->_kd_tree->removePoint(point_id);
-            this->_node_map.erase(state_vertex->state());
+            this->_tree_ptr->removeState(state_vertex);
 
             //remove self from parent list
             if(state_vertex->parent()){
@@ -27,17 +25,26 @@ namespace planner{
                 item->parent() = nullptr;
                 _removeVertex(item);
             }
-        }
-
+        }/*
+        void _animate(cv::Mat& draw, Vertex<T> *  vertex)
+        {
+            cv::circle(draw, cv::Point((int)vertex->state().Vector()[0], (int)vertex->state().Vector()[1]), 3, cv::Scalar{255, 0, 0}, 1);
+            for(auto & it : vertex->children())
+            {
+                cv::line(draw, cv::Point((int)vertex->state().Vector()[0], (int)vertex->state().Vector()[1]),
+                         cv::Point((int)it->state().Vector()[0], (int)it->state().Vector()[1]), cv::Scalar{255, 0, 0}, 2);
+                _animate(draw,it);
+            }
+        }*/
     public:
-        LazyRRT(const LazyRRT<T> &) = delete;
+        LazyRRT(const LazyRRT<T,Distance> &) = delete;
 
-        LazyRRT &operator=(const LazyRRT<T> &) = delete;
+        LazyRRT &operator=(const LazyRRT<T,Distance> &) = delete;
 
-        LazyRRT(std::function<size_t(T)> hashT, std::size_t dimensions, bool forward = true,
+        LazyRRT(std::function<size_t(T)> hashT, std::size_t dimensions,
                 std::function<T(double *)> arrayToT = NULL,
                 std::function<void(T, double *)> TToArray = NULL)
-                : RRT<T>(hashT,dimensions,forward,arrayToT,TToArray)
+                : RRT<T,Distance>(hashT,dimensions,arrayToT,TToArray)
         {
 
         };
@@ -47,7 +54,7 @@ namespace planner{
         bool planning() override
         {
             // validity check
-            if(!this->argsCheck())
+            if(!this->_isPlanConstructed || !this->argsCheck())
                 return false;
             time_t start(clock());
             double time{};
@@ -58,30 +65,32 @@ namespace planner{
                                << " now iterates " << i << "times";
                     return false;
                 }
-                Vertex<T> *new_vertex;
 
+                Vertex<T> *new_vertex;
                 double r = fabs(planner::randomState<state_space::Rn>(1, nullptr)[0]);
 
                 if (r < this->_goal_bias)
-                    new_vertex = this->_steer(this->_goal, nullptr,false);
+                    new_vertex = this->_steer(this->_tree_ptr,this->_tree_ptr->Goal(), nullptr,false);
                 else
-                    new_vertex = this->_steer(this->_sample(), nullptr,false);
-                if (new_vertex && this->_isGoalReached(new_vertex)) {
-                    this->_tail = new_vertex;
+                    new_vertex = this->_steer(this->_tree_ptr,this->_sample(), nullptr,false);
+                if (new_vertex && this->_isReached(new_vertex,this->_tree_ptr->Goal(),false)) {
                     bool solution_found = true;
                     //here the path doesn't contain goal state;
                     std::vector<Vertex<T>*> path;
-                    this->_extract_path(path);
+                    this->_tree_ptr->_extract_path(path,new_vertex);
                     for(int index=path.size()-2 ; index>=0 && solution_found; --index){
                         if(!this->_isStateValid(path[index]->parent()->state(),path[index]->state(),true)){
                             _removeVertex(path[index]);
                             solution_found = false;
                         }
                     }
-                    if(solution_found)
+                    if(solution_found && this->_isReached(new_vertex,this->_tree_ptr->Goal(),true))
+                    {
+                        this->_tree_ptr->addState(this->_tree_ptr->Goal(),new_vertex);
+                        this->_tail = this->_tree_ptr->LastVertex();
                         return true;
+                    }
                 }
-
             }
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;
