@@ -93,23 +93,19 @@ namespace planner{
                                << " now iterates " << i << "times";
                     return false;
                 }
-                Vertex<T> *new_vertex;
-
-                double r = fabs(planner::randomState<state_space::Rn>(1, nullptr)[0]);
-                if (r < this->_goal_bias)
-                    new_vertex = _steer(this->_tree_ptr,this->_tree_ptr->Goal(), nullptr,true);
-                else
-                    new_vertex = _steer(this->_tree_ptr,this->_sample(), nullptr,true);
+                Vertex<T> *new_vertex= _steer(this->_tree_ptr,this->_sample(), nullptr,true);
                 if (new_vertex) {
                     auto temp_tail = _connect(new_vertex,true);
                     if(temp_tail){
                         this->_tail = new_vertex;
-                        _other_tail = temp_tail;
+                        _other_tail = temp_tail->state() == new_vertex->state() ? temp_tail->parent() : temp_tail;
                         reverse = i%2 == 1;
                         return true;
                     }
                 }
-                this->_tree_ptr.swap(_other_tree_ptr);
+                if(_other_tree_ptr->TreeSize()< this->_tree_ptr->TreeSize())
+                    this->_tree_ptr.swap(_other_tree_ptr);
+
             }
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;

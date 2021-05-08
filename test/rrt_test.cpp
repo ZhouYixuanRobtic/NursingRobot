@@ -6,20 +6,32 @@
 #include "opencv2/opencv.hpp"
 #include "planner/PlannerMethod.hpp"
 
+double vdc(int n,unsigned int bits) {
+    int reverse = 0;
+    while (n){
+        int pos = log2(n & -n) + 1;
+        reverse = reverse | (1 << (bits - pos));
+        n = n & (n - 1);
+    }
+    return reverse;
+}
 bool isPathValid_2d(const state_space::Rn &from, const state_space::Rn &to)
 {
     //only accessible for 2d rn space
     if (from.Dimensions() != 2 || from.Dimensions() != 2)
         return true;
-    static cv::Mat img{cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/newmap.png", 0)} ;
-
-    // a simple collision check using cv methods
-    double checked_length{.0};
-    while (checked_length <= planner::distance(from, to)) {
-        auto intermediate_state = planner::extend(from, to, checked_length);
-        if (img.at<uchar>((int) intermediate_state.Vector()[1], (int) intermediate_state.Vector()[0]) == 0)
+    static cv::Mat img{cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/3.png", 0)} ;
+    if(img.at<uchar>((int) to.Vector()[1], (int) to.Vector()[0]) != 255)
+        return false;
+    const double min_distance = 0.5;
+    unsigned int K = ceil(log2(ceil(planner::distance(from,to)/min_distance)));
+    unsigned int bits = K;
+    K = 1<<K;
+    for(int k=0; k<K;++k)
+    {
+        auto intermediate_state = planner::interpolate(from, to, vdc(k,bits)/K);
+        if (img.at<uchar>((int) intermediate_state.Vector()[1], (int) intermediate_state.Vector()[0]) != 255)
             return false;
-        checked_length += 0.5;
     }
     return true;
 }/*
@@ -137,7 +149,7 @@ TEST(RRTTest, SE3withCollisionTest)
 TEST(RRTTest, R2WithAnimationTest)
 {
 
-    cv::Mat img = cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/newmap.png", cv::COLOR_BGR2GRAY);
+    cv::Mat img = cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/3.png");
     Eigen::MatrixX2d bounds;
     bounds.resize(2, 2);
     bounds << Eigen::Vector2d{img.cols, img.rows},
@@ -156,7 +168,7 @@ TEST(RRTTest, R2WithAnimationTest)
 
     rrt_based_planner_ptr->setSampleBounds(&bounds);
 
-    rrt_based_planner_ptr->constructPlan(planner::PLAN_REQUEST<state_space::Rn,flann::L2_Simple<double>>(start_state, goal_state, 500,30,false,30));
+    rrt_based_planner_ptr->constructPlan(planner::PLAN_REQUEST<state_space::Rn,flann::L2_Simple<double>>(start_state, goal_state, 500,200,false,30));
     std::vector<state_space::Rn> path;
     clock_t start(clock());
     if (rrt_based_planner_ptr->planning()) {

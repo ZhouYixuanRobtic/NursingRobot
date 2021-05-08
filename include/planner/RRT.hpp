@@ -84,10 +84,10 @@ namespace planner {
                 if (!nearest_vertex) return nullptr;
             }
             double distance{planner::distance(rand_state,nearest_vertex->state())};
-            //max distance
-            double steer_length =
-                    _is_step_relative ? std::min(distance / _d_min, this->StepLen()) * _d_min : std::min(distance,
-                                                                                                         this->StepLen());
+            //max distance/*
+            double steer_length = _step_len>distance ? distance : _step_len;
+            double lower_bound = _goal_max_dist*(0.5*log10(tree_ptr->TreeSize()));
+            steer_length = steer_length < lower_bound? lower_bound: steer_length;
             //consider a non-relative step 0.05
             T intermediate_state = planner::extend(nearest_vertex->state(), rand_state, steer_length);
             if (!_isStateValid(nearest_vertex->state(), intermediate_state, check_collision)) return nullptr;
@@ -106,11 +106,8 @@ namespace planner {
 
         virtual T _sample()
         {
-            //sample a valid state
-            auto rand_state = randomState<T>(_dimensions, _bounds_ptr);
-            while (!_isStateValid(rand_state, rand_state, true))
-                rand_state = randomState<T>(_dimensions, _bounds_ptr);
-            return rand_state;
+
+            return randomState<T>(_dimensions, _bounds_ptr);
         }
 
         virtual bool _isStateValid(const T &from, const T &to, bool check_collision)
@@ -118,7 +115,7 @@ namespace planner {
             if (_state_validate_func && check_collision)
                 return _state_validate_func(from, to);
             else
-                return true;
+                return _state_validate_func(to,to);
         };
 
 
@@ -151,7 +148,7 @@ namespace planner {
         {
             setStepLen(0.1);
             setMaxIterations(1e9);
-            setGoalBias(0.1);
+            setGoalBias(0.05);
             setGoalMaxDist(_step_len);
         };
 

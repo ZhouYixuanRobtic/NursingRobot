@@ -62,13 +62,7 @@ namespace planner{
                                << " now iterates " << i << "times";
                     return false;
                 }
-                Vertex<T> *new_vertex;
-
-                double r = fabs(planner::randomState<state_space::Rn>(1, nullptr)[0]);
-                if (r < this->_goal_bias)
-                    new_vertex = _steer(this->_tree_ptr,this->_tree_ptr->Goal(), nullptr,false);
-                else
-                    new_vertex = _steer(this->_tree_ptr,this->_sample(), nullptr,false);
+                Vertex<T> *new_vertex=_steer(this->_tree_ptr,this->_sample(), nullptr,false);
                 if (new_vertex) {
                     auto temp_tail = this->_connect(new_vertex,false);
                     if(temp_tail){
@@ -100,7 +94,8 @@ namespace planner{
                     }
                 }
 
-                this->_tree_ptr.swap(this->_other_tree_ptr);
+                if(this->_other_tree_ptr->TreeSize()< this->_tree_ptr->TreeSize())
+                    this->_tree_ptr.swap(this->_other_tree_ptr);
             }
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;

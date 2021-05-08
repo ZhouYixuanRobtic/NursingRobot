@@ -115,22 +115,32 @@ namespace my_collision_detection {
             }
             return result;
         }
-
+        static double vdc(int n,unsigned int bits) {
+            int reverse = 0;
+            while (n){
+                int pos = log2(n & -n) + 1;
+                reverse = reverse | (1 << (bits - pos));
+                n = n & (n - 1);
+            }
+            return reverse;
+        }
         bool isPathValid(const state_space::JointSpace &from,
                          const state_space::JointSpace &to) const
         {
             const double min_distance = 0.005;
-            std::size_t steps = floor(((from-to.Vector()).Vector() / min_distance).cwiseAbs().maxCoeff());
-            steps = steps == 0 ? steps + 1 : steps;
-            const double r_step = 1.0 / steps;
-            bool result = true;
-            double percent{r_step};
-            while (percent <= 1) {
-                state_space::JointSpace temp_state = planner::interpolate(from, to, percent);
-                result &= isStateValid(temp_state);
-                percent += r_step;
+            if(!isStateValid(to))
+                return false;
+            std::size_t steps = ceil(((to-from.Vector()).Vector().cwiseAbs().maxCoeff()/min_distance));
+            unsigned int K = ceil(log2(steps));
+            unsigned int bits = K;
+            K = 1<<K;
+            for(int k=0; k<K;++k)
+            {
+                auto temp_state = planner::interpolate(from, to, vdc(k,bits)/K);
+                if(!isStateValid(temp_state))
+                    return false;
             }
-            return result;
+            return true;
         }
 
         const my_kinematics::KinematicsPtr &getKinematicsPtr() const
