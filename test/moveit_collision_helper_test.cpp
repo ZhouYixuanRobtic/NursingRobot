@@ -4,7 +4,7 @@
 #include "collision_detection/MoveItCollisionHelper.h"
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <tf2_eigen/tf2_eigen.h>
-/*
+
 TEST(collision_test, get_current_state_test)
 {
     const std::string PLANNING_GROUP = "manipulator_i5";
@@ -19,8 +19,39 @@ TEST(collision_test, get_current_state_test)
 
     moveit::planning_interface::MoveGroupInterface move_group(PLANNING_GROUP);
 
-    auto namedTargets = move_group.getNamedTargets();
+    robot_state::RobotStatePtr kinematic_state(new robot_state::RobotState(move_group.getRobotModel()));
+    kinematic_state->setToDefaultValues();
+    const robot_state::JointModelGroup* joint_model_group = move_group.getRobotModel()->getJointModelGroup("manipulator_i5");
 
+
+    kinematic_state->setToRandomPositions(joint_model_group);
+    clock_t  start = clock();
+    Eigen::Affine3d end_effector_state = kinematic_state->getGlobalLinkTransform("ee_link");
+    std::cout<<"time :"<<1e6*(double)(clock()-start)/CLOCKS_PER_SEC<<std::endl;
+    std::size_t attempts = 10;
+    double timeout = 0.1;
+    const std::size_t max_iterations=1E6;
+    std::size_t valid_times=0,the_same_counter=0;
+    std::vector<double> joint_values;
+
+    for(int i=0;i<max_iterations;++i){
+        kinematic_state->setToRandomPositions(joint_model_group);
+        kinematic_state->copyJointGroupPositions(joint_model_group, joint_values);
+        auto current_joints = state_space::JointSpace(joint_values);
+        end_effector_state = kinematic_state->getGlobalLinkTransform("ee_link");
+        bool found_ik = kinematic_state->setFromIK(joint_model_group, end_effector_state, attempts, timeout);
+        if(found_ik){
+            valid_times++;
+            kinematic_state->copyJointGroupPositions(joint_model_group, joint_values);
+            auto ik_joints = state_space::JointSpace(joint_values);
+            if(planner::distance(current_joints,ik_joints)<1E-3)
+                the_same_counter++;
+        }
+    }
+    std::cout<<"coverage rate"<<valid_times<<"/"<<max_iterations<<": "<<(double)valid_times/max_iterations;
+    std::cout<<"the same rate"<<the_same_counter<<"/"<<max_iterations<<": "<<(double )the_same_counter/max_iterations;
+    //auto namedTargets = move_group.getNamedTargets();
+/*
     for (const auto &namedTarget : namedTargets) {
         move_group.setNamedTarget(namedTarget);
         move_group.move();
@@ -34,10 +65,10 @@ TEST(collision_test, get_current_state_test)
                             << "my current pose failed in " << namedTarget << " case";
         EXPECT_NEAR(0, planner::distance(current_joint, my_current_joint), 1e-3)
                             << "my current joints failed in " << namedTarget << " case";;
-    }
+    }*/
     spinner.stop();
-}*/
-
+}
+/*
 TEST(collision_test, ik_with_collision_check_test)
 {
     const std::string PLANNING_GROUP = "manipulator_i5";
@@ -95,7 +126,7 @@ TEST(collision_test, ik_with_collision_check_test)
             ik_all_with_collision_counter++;
         }
         one_time += double(end - start) / CLOCKS_PER_SEC;
-    }*/
+    }*
     EXPECT_EQ(max_iterations,ik_with_one_collision_counter)<<"the state valid coverage rate of neaerest is not 100%, but"
                                                             <<ik_with_one_collision_counter<<" / "<<max_iterations;
 
@@ -104,7 +135,7 @@ TEST(collision_test, ik_with_collision_check_test)
     LOG(INFO)<<"time consumption of all valid solution "<<1e6 * all_time/max_iterations<<"us\n";
     LOG(INFO)<<"time consumption of nearest valid solution"<<1e6 * one_time/max_iterations<<"us\n";
     spinner.stop();
-}
+}*/
 
 int main(int argc, char **argv)
 {

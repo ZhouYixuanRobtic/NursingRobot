@@ -102,7 +102,7 @@ namespace planner {
         if(source == target)
             return target;
         T extend_direction = target - source;
-        extend_direction = extend_direction * (1 / extend_direction.norm());
+        extend_direction = extend_direction * (1.0 / extend_direction.norm());
         return source + (extend_direction * extend_length);
     }
 
@@ -112,7 +112,7 @@ namespace planner {
         if(source == target)
             return target;
         state_space::JointTangent extend_direction = target-source.Vector();
-        extend_direction = extend_direction * (1 / extend_direction.Vector().cwiseAbs().sum());
+        extend_direction = extend_direction * (1.0 / extend_direction.Vector().cwiseAbs().sum());
         return source + (extend_direction * extend_length);
     }
     /**
@@ -190,7 +190,7 @@ namespace planner {
     template<>
     double distance(const state_space::JointSpace &from, const state_space::JointSpace &to)
     {
-        return (from-to.Vector()).Vector().cwiseAbs().sum();
+        return (to-from.Vector()).Vector().cwiseAbs().sum();
     }
 
 

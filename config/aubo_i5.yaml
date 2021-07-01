@@ -6,8 +6,8 @@ aubo_i5:
 
   mount_configuration: [0.000, 0.000, 0.122,0,0,1,0]
 
-  ee_configuration: [-0.0405, 0.0, 0.14775,0.000, -0.000, 0.707106781186547524, 0.707106781186547524]
-
+  #ee_configuration: [-0.0405, 0.0, 0.14775,0.000, -0.000, 0.707106781186547524, 0.707106781186547524]
+  ee_configuration: [0.0, 0.0, 0.0,0.0, 0.0, 0.0, 1.0]
   #is the screw axes presented in body frame
   isInBodyFrame: false
 

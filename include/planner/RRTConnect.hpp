@@ -18,6 +18,10 @@ namespace planner{
             _steer(_other_tree_ptr,vertex->state(), nullptr,check_collision);
             while(steer_status == ADVANCED)
             {
+                time = (double) (clock() - start) / CLOCKS_PER_SEC;
+                if (time >= this->_time_limit) {
+                    break;
+                }
                 _steer(_other_tree_ptr,vertex->state(), nullptr,check_collision);
             }
             return steer_status == REACHED ? this->_other_tree_ptr->LastVertex() : nullptr;
@@ -26,14 +30,26 @@ namespace planner{
         Vertex<T>* _other_tail;
 
         bool reverse{false};
-
-
+        double time{};
+        time_t start;
         Vertex <T> * _steer(std::shared_ptr<Tree<T,Distance>> & tree_ptr,const T &rand_state, Vertex <T> *source, bool check_collision) override
         {
+            static cv::Mat draw{cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/3.png")};
+            static Vertex<T>* ptr1=this->_other_tree_ptr->RootVertex();
+            static Vertex<T>* ptr2 = tree_ptr->RootVertex();
             auto nearest_vertex = RRT<T,Distance>::_steer(tree_ptr,rand_state,source,check_collision);
-            steer_status = nearest_vertex != nullptr ? ADVANCED : TRAPPED;
-            steer_status = (nearest_vertex != nullptr && this->_isReached(nearest_vertex,rand_state,check_collision)) ? REACHED : steer_status;
 
+            steer_status = nearest_vertex != nullptr ? ADVANCED : TRAPPED;
+            if(nearest_vertex != nullptr){
+                cv::Mat canvas;
+                draw.copyTo(canvas);
+                tree_ptr->_animate(canvas,ptr1);
+                tree_ptr->_animate(canvas,ptr2);
+                cv::resize(canvas,canvas,cv::Size{800,800});
+                cv::imshow("check: ",canvas);
+                cv::waitKey(100);
+            }
+            steer_status = (nearest_vertex != nullptr && this->_isReached(nearest_vertex,rand_state,check_collision)) ? REACHED : steer_status;
             return nearest_vertex;
         }
 
@@ -84,13 +100,14 @@ namespace planner{
                 _other_tail = _other_tree_ptr->RootVertex();
                 return true;
             }
-            time_t start(clock());
-            double time{};
+            start = (clock());
+
             for (int i = 0; i < this->_iter_max; ++i) {
                 time = (double) (clock() - start) / CLOCKS_PER_SEC;
                 if (time >= this->_time_limit) {
                     LOG(ERROR) << "No path find within " << this->_time_limit << " seconds"
                                << " now iterates " << i << "times";
+                    this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
                     return false;
                 }
                 Vertex<T> *new_vertex= _steer(this->_tree_ptr,this->_sample(), nullptr,true);
@@ -100,6 +117,7 @@ namespace planner{
                         this->_tail = new_vertex;
                         _other_tail = temp_tail->state() == new_vertex->state() ? temp_tail->parent() : temp_tail;
                         reverse = i%2 == 1;
+                        this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
                         return true;
                     }
                 }
@@ -107,9 +125,24 @@ namespace planner{
                     this->_tree_ptr.swap(_other_tree_ptr);
 
             }
+            this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;
         }
+        std::string getName() const override{
+            return "RRT_Connect";
+        }
+         std::size_t getTotalNodes() const override{
+            return this->_total_nodes;
+        };
+        std::vector<Vertex<T>*> getRootVertex() override
+        {
+            std::vector<Vertex<T>*> results;
+            results.template emplace_back(this->_tree_ptr->RootVertex());
+            results.template emplace_back(this->_other_tree_ptr->RootVertex());
+            return results;
+        }
+
     };
 }
 

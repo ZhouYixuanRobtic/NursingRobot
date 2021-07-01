@@ -168,7 +168,7 @@ namespace state_space {
 
         double distance(const JointSpace &to) const override
         {
-            return (*this - to).norm();
+            return (to-this->Vector()).Vector().cwiseAbs().sum();
         };
 
         double distance(const Eigen::VectorXd &input) const

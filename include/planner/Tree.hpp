@@ -68,7 +68,7 @@ namespace planner {
         }
         std::size_t TreeSize() const
         {
-            return _node_map.size();
+            return _kd_tree_hash_map.size();
         }
         void reset(bool eraseRoot = false)
         {
@@ -126,6 +126,26 @@ namespace planner {
             return _node_map[point];
         }
 
+        void _animate(cv::Mat& draw, Vertex<T> * vertex)
+        {
+            cv::circle(draw, cv::Point((int)vertex->state().Vector()[0], (int)vertex->state().Vector()[1]), 3, cv::Scalar{255, 0, 0}, 1);
+            for(auto & it : vertex->children())
+            {
+                cv::line(draw, cv::Point((int)vertex->state().Vector()[0], (int)vertex->state().Vector()[1]),
+                         cv::Point((int)it->state().Vector()[0], (int)it->state().Vector()[1]), cv::Scalar{255, 0, 0}, 2);
+                _animate(draw,it);
+            }
+        }
+
+        void animate(cv::Mat& draw)
+        {
+            cv::Mat canvas;
+            draw.copyTo(canvas);
+            _animate(canvas,RootVertex());
+            cv::resize(canvas,canvas,cv::Size{800,800});
+            cv::imshow("check: ",canvas);
+            cv::waitKey(50);
+        }
 
         virtual void addState(const T &state, Vertex <T> * parent)
         {
@@ -133,6 +153,8 @@ namespace planner {
             _kd_tree->addPoints(flann::Matrix<double>(_nodes.back().data(), 1, _dimensions));
             _kd_tree_hash_map.template insert(std::make_pair(&_nodes.back(), _kd_tree_hash_map.size()));
             _node_map.insert(std::pair<T, Vertex<T> *>(state, &_nodes.back()));
+            static cv::Mat draw1{cv::imread("/home/xcy/Cspace/SampleBasedPlanningMethods/3.png")};
+            animate(draw1);
         }
 
         virtual void removeState(Vertex<T>* vertex)

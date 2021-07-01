@@ -17,8 +17,8 @@ namespace my_collision_detection {
 
     }
 
-    bool MoveItCollisionHelperImpl::isStateValid(const state_space::JointSpace &state) const
-    {
+    bool MoveItCollisionHelperImpl::isStateValid(const state_space::JointSpace &state){
+        cc_times++;
         moveit::core::RobotState current_state = _planning_scene_ptr->getCurrentState();
         collision_detection::CollisionRequest collision_request;
         collision_detection::CollisionResult collision_result;
@@ -27,7 +27,7 @@ namespace my_collision_detection {
         return !collision_result.collision && current_state.satisfiesBounds(_joint_model_group,1e-6);
     }
 
-    bool MoveItCollisionHelperImpl::isStateValid(const state_space::SE3 &state) const
+    bool MoveItCollisionHelperImpl::isStateValid(const state_space::SE3 &state)
     {
         //IK if one ik is valid then the state is valid
         Eigen::MatrixXd joint_solutions;
@@ -43,7 +43,7 @@ namespace my_collision_detection {
     MoveItCollisionHelperImpl::allValidSolutions(state_space::vector_JointSpace &final_results,
                                                  const state_space::SE3 &desired_pose,
                                                  const state_space::JointSpace *reference_ptr,
-                                                 bool check_collision) const
+                                                 bool check_collision)
     {
         final_results.clear();
         Eigen::MatrixXd joint_solutions;
@@ -63,7 +63,7 @@ namespace my_collision_detection {
                                                     const state_space::SE3 &desired_pose,
                                                     const state_space::JointSpace &reference,
                                                     bool isConsecutive,
-                                                    bool check_collision) const
+                                                    bool check_collision)
     {
         //return the nearest ik solution
         if (check_collision){

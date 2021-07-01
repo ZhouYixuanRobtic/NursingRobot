@@ -75,6 +75,12 @@ namespace my_collision_detection {
             _moveit_collision_helper_impl_ptr->getEndEffectorPose(ee_transform);
             return ee_transform;
         }
+        std::size_t getCCTimes()const{
+            return _moveit_collision_helper_impl_ptr->getCCTimes();
+        }
+        void clearCCTimes(){
+            _moveit_collision_helper_impl_ptr->clearCCTimes();
+        }
     };
 }
 

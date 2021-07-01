@@ -112,3 +112,9 @@ target_link_libraries(planning_interface_test ${catkin_LIBRARIES} PlanningInterf
 
 catkin_add_gtest(state_space_test test/state_space_test.cpp)
 target_link_libraries(state_space_test ${catkin_LIBRARIES} StateSpace ${GLOG_LIBRARIES})
+
+catkin_add_gtest(interpolate_test test/interpolate_test.cpp)
+target_link_libraries(interpolate_test ${catkin_LIBRARIES} StateSpace ${GLOG_LIBRARIES})
+
+catkin_add_gtest(vdc_test test/vdc_test.cpp)
+target_link_libraries(vdc_test ${catkin_LIBRARIES} StateSpace ${GLOG_LIBRARIES} ${OpenCV_LIBS})

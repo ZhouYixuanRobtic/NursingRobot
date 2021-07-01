@@ -6,6 +6,8 @@ namespace planner{
     protected:
         void _removeVertex(Vertex<T>* state_vertex, std::shared_ptr<Tree<T,Distance>> & tree)
         {
+            if(state_vertex == nullptr)
+                return;
             tree->removeState(state_vertex);
             //remove self from parent list
             if(state_vertex->parent()){
@@ -53,13 +55,14 @@ namespace planner{
                 this->_other_tail = this->_other_tree_ptr->RootVertex();
                 return true;
             }
-            time_t start(clock());
+            this->start = (clock());
             double time{};
             for (int i = 0; i < this->_iter_max; ++i) {
-                time = (double) (clock() - start) / CLOCKS_PER_SEC;
+                time = (double) (clock() - this->start) / CLOCKS_PER_SEC;
                 if (time >= this->_time_limit) {
                     LOG(ERROR) << "No path find within " << this->_time_limit << " seconds"
                                << " now iterates " << i << "times";
+                    this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
                     return false;
                 }
                 Vertex<T> *new_vertex=_steer(this->_tree_ptr,this->_sample(), nullptr,false);
@@ -89,6 +92,7 @@ namespace planner{
                             this->_tail = new_vertex;
                             this->_other_tail = temp_tail;
                             this->reverse = i %2 == 1;
+                            this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
                             return true;
                         }
                     }
@@ -97,10 +101,25 @@ namespace planner{
                 if(this->_other_tree_ptr->TreeSize()< this->_tree_ptr->TreeSize())
                     this->_tree_ptr.swap(this->_other_tree_ptr);
             }
+            this->_total_nodes = this->_tree_ptr->TreeSize()+this->_other_tree_ptr->TreeSize();
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;
         }
+        std::string getName() const override{
+            return "Lazy_RRT_Connect";
+        }
+        std::size_t getTotalNodes() const override{
+            return this->_total_nodes;
+        };
+        std::vector<Vertex<T>*> getRootVertex() override
+        {
+            std::vector<Vertex<T>*> results;
+            results.template emplace_back(this->_tree_ptr->RootVertex());
+            results.template emplace_back(this->_other_tree_ptr->RootVertex());
+            return results;
+        }
     };
+
 }
 
 #endif //NURSINGROBOT_LAZYRRTCONNECT_HPP

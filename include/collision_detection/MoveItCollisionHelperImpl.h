@@ -86,6 +86,8 @@ namespace my_collision_detection {
         const robot_model::JointModelGroup *_joint_model_group;
 
         JointStatesSubscriberPtr _joint_state_subscribe_ptr;
+
+        std::size_t cc_times{};
     public:
 
         MoveItCollisionHelperImpl(const std::string &group_name,
@@ -95,12 +97,12 @@ namespace my_collision_detection {
 
         ~MoveItCollisionHelperImpl() = default;
 
-        bool isStateValid(const state_space::JointSpace &state) const;
+        bool isStateValid(const state_space::JointSpace &state);
 
-        bool isStateValid(const state_space::SE3 &state) const;
+        bool isStateValid(const state_space::SE3 &state);
 
         bool isPathValid(const state_space::SE3 &from,
-                         const state_space::SE3 &to) const
+                         const state_space::SE3 &to)
         {
             const double min_distance = 0.005;
             std::size_t steps = fabs(floor(planner::distance(from, to) / min_distance));
@@ -125,7 +127,7 @@ namespace my_collision_detection {
             return reverse;
         }
         bool isPathValid(const state_space::JointSpace &from,
-                         const state_space::JointSpace &to) const
+                         const state_space::JointSpace &to)
         {
             const double min_distance = 0.005;
             if(!isStateValid(to))
@@ -142,6 +144,23 @@ namespace my_collision_detection {
             }
             return true;
         }
+         /*
+        bool isPathValid(const state_space::JointSpace &from,
+                         const state_space::JointSpace &to)
+        {
+            const double min_distance = 0.005;
+            std::size_t steps = floor(((to-from.Vector()).Vector() / min_distance).cwiseAbs().maxCoeff());
+            steps = steps == 0 ? steps + 1 : steps;
+            const double r_step = 1.0 / steps;
+            double percent{0.0};
+            while (percent <= 1) {
+                state_space::JointSpace temp_state = planner::interpolate(from, to, percent);
+                if(!isStateValid(temp_state))
+                    return false;
+                percent += r_step;
+            }
+            return true;
+        }*/
 
         const my_kinematics::KinematicsPtr &getKinematicsPtr() const
         {
@@ -151,13 +170,13 @@ namespace my_collision_detection {
         bool allValidSolutions(state_space::vector_JointSpace &final_results,
                                const state_space::SE3 &desired_pose,
                                const state_space::JointSpace *reference_ptr,
-                               bool check_collision) const;
+                               bool check_collision);
 
         bool nearestSolution(state_space::JointSpace &solution,
                              const state_space::SE3 &desired_pose,
                              const state_space::JointSpace &reference,
                              bool isConsecutive,
-                             bool check_collision) const;
+                             bool check_collision);
 
         void setJointSubscriber(const JointStatesSubscriberPtr &joint_subscriber)
         {
@@ -185,6 +204,13 @@ namespace my_collision_detection {
         {
             return getCurrentLinkTransform(ee_transform, _kinematics_ptr->getEndEffectorName(),
                                            getCurrentJointAngles());
+        }
+
+        std::size_t getCCTimes()const{
+            return cc_times;
+        }
+        void clearCCTimes(){
+            cc_times = 0;
         }
     };
 

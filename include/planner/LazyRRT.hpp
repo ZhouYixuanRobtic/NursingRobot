@@ -8,6 +8,8 @@ namespace planner{
     protected:
         void _removeVertex(Vertex<T>* state_vertex)
         {
+            if(state_vertex== nullptr)
+                return;
             this->_tree_ptr->removeState(state_vertex);
 
             //remove self from parent list
@@ -63,6 +65,7 @@ namespace planner{
                 if (time >= this->_time_limit) {
                     LOG(ERROR) << "No path find within " << this->_time_limit << " seconds"
                                << " now iterates " << i << "times";
+                    this->_total_nodes = this->_tree_ptr->TreeSize();
                     return false;
                 }
 
@@ -88,12 +91,26 @@ namespace planner{
                     {
                         this->_tree_ptr->addState(this->_tree_ptr->Goal(),new_vertex);
                         this->_tail = this->_tree_ptr->LastVertex();
+                        this->_total_nodes = this->_tree_ptr->TreeSize();
                         return true;
                     }
                 }
             }
+            this->_total_nodes = this->_tree_ptr->TreeSize();
             LOG(ERROR) << "No path find within " << this->_iter_max<< " iterations";
             return false;
+        }
+        std::string getName() const override{
+            return "Lazy_RRT";
+        }
+        std::size_t getTotalNodes() const override{
+            return this->_total_nodes;
+        };
+        std::vector<Vertex<T>*> getRootVertex() override
+        {
+            std::vector<Vertex<T>*> results;
+            results.template emplace_back(this->_tree_ptr->RootVertex());
+            return results;
         }
     };
 

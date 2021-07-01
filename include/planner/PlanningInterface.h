@@ -37,6 +37,18 @@ namespace planner{
                                     const JumpThreshold &jump_threshold,
                                     const std::string &reference_frame);
 
+        std::string getPlannerName() const{
+            return _rrt_ptr->getName();
+        }
+        std::size_t getCCTimes()const{
+            return _moveit_collision_helper_ptr->getCCTimes();
+        }
+        void clearCCTimes(){
+            _moveit_collision_helper_ptr->clearCCTimes();
+        }
+        std::size_t getTotalNodes()const{
+            return _rrt_ptr->getTotalNodes();
+        }
     };
 
 

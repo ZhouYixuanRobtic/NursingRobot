@@ -7,8 +7,8 @@ namespace planner {
     enum PLANNER_TYPE {
         RRT_SIMPLE,
         RRT_CONNECT,
-        LAZY_RRT,
         LAZY_RRT_CONNECT,
+        LAZY_RRT,
         RRT_STAR,
         INFORMED_RRT_STAR
     };
@@ -59,6 +59,8 @@ namespace planner {
 
         std::size_t _iter_max{};
 
+        std::size_t _total_nodes{1};
+
         double _step_len{};
 
         bool _is_step_relative{false};
@@ -85,11 +87,12 @@ namespace planner {
             }
             double distance{planner::distance(rand_state,nearest_vertex->state())};
             //max distance/*
-            double steer_length = _step_len>distance ? distance : _step_len;
-            double lower_bound = _goal_max_dist*(0.5*log10(tree_ptr->TreeSize()));
-            steer_length = steer_length < lower_bound? lower_bound: steer_length;
+            //double steer_length = _step_len>distance ? distance : _step_len;
+            //double lower_bound = _goal_max_dist*(1+0.1*log10(tree_ptr->TreeSize()));
+            //steer_length = steer_length < lower_bound? lower_bound: steer_length;
+
             //consider a non-relative step 0.05
-            T intermediate_state = planner::extend(nearest_vertex->state(), rand_state, steer_length);
+            T intermediate_state = planner::extend(nearest_vertex->state(), rand_state, _goal_max_dist);
             if (!_isStateValid(nearest_vertex->state(), intermediate_state, check_collision)) return nullptr;
             tree_ptr->addState(intermediate_state,nearest_vertex);
             return tree_ptr->LastVertex();
@@ -98,7 +101,7 @@ namespace planner {
         bool _isReached(const Vertex <T> *node_end, const T& goal, bool check_collision = true )
         {
             bool near = _is_step_relative ? planner::distance(node_end->state(), _goal) / _d_min < _goal_max_dist :
-                        planner::distance(node_end->state(), goal) < _goal_max_dist;
+                        planner::distance(node_end->state(), goal) <= _goal_max_dist;
 
             near = near ? _isStateValid(node_end->state(), goal, check_collision) : near;
             return near;
@@ -106,7 +109,6 @@ namespace planner {
 
         virtual T _sample()
         {
-
             return randomState<T>(_dimensions, _bounds_ptr);
         }
 
@@ -255,6 +257,7 @@ namespace planner {
                 if (time >= _time_limit) {
                     LOG(ERROR) << "No path find within " << _time_limit << " seconds"
                                << " now iterates " << i << "times";
+                    this->_total_nodes = this->_tree_ptr->TreeSize();
                     return false;
                 }
                 Vertex<T> *new_vertex;
@@ -268,9 +271,11 @@ namespace planner {
                 if (new_vertex && _isReached(new_vertex,_tree_ptr->Goal())) {
                     _tree_ptr->addState(_tree_ptr->Goal(),new_vertex);
                     _tail = _tree_ptr->LastVertex();
+                    this->_total_nodes = this->_tree_ptr->TreeSize();
                     return true;
                 }
             }
+            this->_total_nodes = this->_tree_ptr->TreeSize();
             LOG(ERROR) << "No path find within " << _iter_max << " iterations";
             return false;
         }
@@ -281,7 +286,18 @@ namespace planner {
             _tree_ptr->extract_path(path,_tail,false);
             return path;
         }
-
+        virtual std::string getName() const{
+            return "RRT_Simple";
+        }
+        virtual std::size_t getTotalNodes() const{
+            return _total_nodes;
+        };
+        virtual std::vector<Vertex<T>*> getRootVertex()
+        {
+            std::vector<Vertex<T>*> results;
+            results.template emplace_back(_tree_ptr->RootVertex());
+            return results;
+        }
     };
 
 
